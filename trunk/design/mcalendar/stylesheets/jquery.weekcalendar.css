@@ -184,8 +184,12 @@ table.week-calendar-time-slots {
 }
 
 .ui-resizable-s {
-	height: 10px;
-	bottom: -8px;	
+	bottom:-8px;
+        height: 20px;
+	position:absolute;
+        width:100%;
+        background-color:yellow;
+        
 }
 
 

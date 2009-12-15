@@ -1,50 +1,59 @@
-
-
 $(document).ready(function() {
-
-   
+  
     var $calendar = $('#calendar');
     var id = 10;
-    
-	$calendar.weekCalendar({
-		timeslotsPerHour : 4,
-		allowCalEventOverlap : true,
+    var $actionUrl =$('p[title="action"]').text();
+    var $editIcon=$('p[title="editIcon"]').text();
+
+   
+    $calendar.weekCalendar({
+        timeslotsPerHour : 4,
+        allowCalEventOverlap : true,
         firstDayOfWeek : 1,
-        businessHours :{start: 8, end: 18, limitDisplay: true },
-		height : function($calendar) {
-			return $(window).height() - $("h1").outerHeight();
-		},
-		eventRender : function(calEvent, $event) {
-			if (calEvent.end.getTime() < new Date().getTime()) {
-				$event.css("backgroundColor", "#aaa");
-				$event.find(".time").css({
-							"backgroundColor" : "#999",
-							"border" : "1px solid #888"
-						});
-			}
-		},
+        businessHours :{
+            start: 8,
+            end: 16,
+            limitDisplay: true
+        },
+        height : function($calendar) {
+            return $(window).height() - $("h1").outerHeight();
+        },
+        eventRender : function(calEvent, $event) {
+            
+            if (calEvent.end.getTime() < new Date().getTime()) {
+                $event.css("backgroundColor", "#aaa");
+                $event.find(".time").css({
+                    "backgroundColor" : "#119",
+                    "border" : "2px solid #888"
+                });
+            }
+            $event.append('<div class="info"> isMain '+calEvent.isMain+' Freq:'+calEvent.frequency+'</div>');
+           
+            $event.append(renderToolbar(calEvent))  ;
+            
+        },
         draggable : function(calEvent, $event) {
-           return calEvent.readOnly != true;
+            return (calEvent.readOnly != true)&&(calEvent.isMain==true);
+            
         },
         resizable : function(calEvent, $event) {
-            return calEvent.readOnly != true;
+            return (calEvent.readOnly != true)&&(calEvent.isMain==true);
         },
-		eventNew : function(calEvent, $event) {
+        eventNew : function(calEvent, $event) {
             var $dialogContent = $("#event_edit_container");
             resetForm($dialogContent);
             var startField = $dialogContent.find("select[name='start']").val(calEvent.start);
             var endField =  $dialogContent.find("select[name='end']").val(calEvent.end);
             var titleField = $dialogContent.find("input[name='title']");
             var bodyField = $dialogContent.find("textarea[name='body']");
-            
-            
+                   
             $dialogContent.dialog({
                 modal: true,
                 title: "New Calendar Event",
                 close: function() {
-                   $dialogContent.dialog("destroy");
-                   $dialogContent.hide();
-                   $('#calendar').weekCalendar("removeUnsavedEvents");
+                    $dialogContent.dialog("destroy");
+                    $dialogContent.hide();
+                    $('#calendar').weekCalendar("removeUnsavedEvents");
                 },
                 buttons: {
                     save : function(){
@@ -54,6 +63,12 @@ $(document).ready(function() {
                         calEvent.end = new Date(endField.val());
                         calEvent.title = titleField.val();
                         calEvent.body = bodyField.val();
+                        var action='mcalendar::addEventAjax::1077::'+toTimestamp(calEvent.start)+'::'+toTimestamp(calEvent.end)+'::'+calEvent.body+'::'+calEvent.title+'::'+calEvent.id;
+                        $.ez(action,{
+                            postData: 'hi!'
+                        },function(data){
+                            $calendar.weekCalendar("updateEvent", data.content);
+                            });
 
                         $calendar.weekCalendar("removeUnsavedEvents");
                         $calendar.weekCalendar("updateEvent", calEvent);
@@ -70,12 +85,23 @@ $(document).ready(function() {
             $(window).resize().resize(); //fixes a bug in modal overlay size ??
             
             
-		},
-		eventDrop : function(calEvent, $event) {
-		},
-		eventResize : function(calEvent, $event) {
-		},
-		eventClick : function(calEvent, $event) {
+        },
+        eventDrop : function(calEvent, $event) {
+            if((calEvent.readOnly)||(!calEvent.isMain)) {
+                return;
+            }
+            var action='mcalendar::updateEventAjax::'+calEvent.objectId+'::'+toTimestamp(calEvent.start)+'::'+toTimestamp(calEvent.end);
+            $.ez(action);
+        },
+        eventResize : function(calEvent, $event) {
+            if((calEvent.readOnly)||(!calEvent.isMain)) {
+                return;
+            }
+            var action='mcalendar::updateEventAjax::'+calEvent.objectId+'::'+toTimestamp(calEvent.start)+'::'+toTimestamp(calEvent.end);
+            $.ez(action);
+           
+        },
+        eventClick : function(calEvent, $event) {
             
             if(calEvent.readOnly) {
                 return;
@@ -93,9 +119,9 @@ $(document).ready(function() {
                 modal: true,
                 title: "Edit - " + calEvent.title,
                 close: function() {
-                   $dialogContent.dialog("destroy");
-                   $dialogContent.hide();
-                   $('#calendar').weekCalendar("removeUnsavedEvents");
+                    $dialogContent.dialog("destroy");
+                    $dialogContent.hide();
+                    $('#calendar').weekCalendar("removeUnsavedEvents");
                 },
                 buttons: {
                     save : function(){
@@ -104,11 +130,13 @@ $(document).ready(function() {
                         calEvent.end = new Date(endField.val());
                         calEvent.title = titleField.val();
                         calEvent.body = bodyField.val();
-               
+                                             
                         $calendar.weekCalendar("updateEvent", calEvent);
                         $dialogContent.dialog("close");
                     },
                     "delete" : function(){
+                        var action='mcalendar::removeEvent::'+calEvent.nodeId;
+                        $.ez(action);
                         $calendar.weekCalendar("removeEvent", calEvent.id);
                         $dialogContent.dialog("close");
                     },
@@ -122,44 +150,62 @@ $(document).ready(function() {
             var endField =  $dialogContent.find("select[name='end']").val(calEvent.end);
             $dialogContent.find(".date_holder").text($calendar.weekCalendar("formatDate", calEvent.start));
             setupStartAndEndTimeFields(startField, endField, calEvent, $calendar.weekCalendar("getTimeslotTimes", calEvent.start));
-		    $(window).resize().resize(); //fixes a bug in modal overlay size ??
+            $(window).resize().resize(); //fixes a bug in modal overlay size ??
         
         },
-		eventMouseover : function(calEvent, $event) {
-		},
-		eventMouseout : function(calEvent, $event) {
-		},
-		noEvents : function() {
+        eventMouseover : function(calEvent, $event) {
             
-		},
-		data : function(start, end, callback) {
-            callback(getEventData());
+        },
+        eventMouseout : function(calEvent, $event) {
+        },
+        noEvents : function() {
+            
+        },
+        data : function(start, end, callback) {
+       
+            $.ez('mcalendar::fetchEvents::1077::'+Math.round(start.getTime()/1000)+'::'+Math.round(end.getTime()/1000)+'::ajaxweek',function(data) {
+                callback(data.content);
+            });
         }
-	});
+    });
     
     function resetForm($dialogContent) {
-         $dialogContent.find("input").val("");
-         $dialogContent.find("textarea").val("");
+        $dialogContent.find("input").val("");
+        $dialogContent.find("textarea").val("");
     }
     
     function getEventData() {
-        var year = new Date().getFullYear();
-        var month = new Date().getMonth();
-        var day = new Date().getDate();
+   
         
         return {
-            events : [
-               {"id":1, "start": new Date(year, month, day, 12), "end": new Date(year, month, day, 13, 30),"title":"Lunch with Mike"},
-               {"id":2, "start": new Date(year, month, day, 14), "end": new Date(year, month, day, 14, 45),"title":"Dev Meeting"},
-               {"id":3, "start": new Date(year, month, day + 1, 17), "end": new Date(year, month, day + 1, 17, 45),"title":"Hair cut"},
-               {"id":4, "start": new Date(year, month, day - 1, 8), "end": new Date(year, month, day - 1, 9, 30),"title":"Team breakfast"},
-               {"id":5, "start": new Date(year, month, day + 1, 14), "end": new Date(year, month, day + 1, 15),"title":"Product showcase"},
-               {"id":6, "start": new Date(year, month, day, 10), "end": new Date(year, month, day, 11),"title":"I'm read-only", readOnly : true}
-            
+            "events" : [
+            {
+                "id":1,
+                "start":1.2566286e+12,
+                "end":1.256634e+12,
+                "title":"CANE CANE"
+            }
             ]
         };
     }
-    
+
+
+    function renderToolbar(calEvent)
+    {
+        var tools='<div id="tools"> <form action='+$actionUrl+' method="post">';
+        tools+='<input type="image" name="EditButton" src='+$editIcon+' alt="Edit" />';
+        tools+='<input type="hidden" name="ContentObjectLanguageCode" value="'+calEvent.currentLanguage+'"/>';
+        tools+='<input type="hidden" name="ContentObjectID" value="'+calEvent.objectId+'"/>';
+        tools+='<input type="hidden" name="NodeID" value="'+calEvent.nodeId+'" />';
+        tools+='<input type="hidden" name="ContentNodeID" value="'+calEvent.nodeId+'" />';
+        tools+='</form></div>';
+        return tools;
+    }
+
+
+    function toTimestamp(date){
+        return Math.round(date.getTime()/1000);
+    }
     
     /*
      * Sets up the start and end time fields in the calendar event 
@@ -167,7 +213,7 @@ $(document).ready(function() {
      */
     function setupStartAndEndTimeFields($startTimeField, $endTimeField, calEvent, timeslotTimes) {
             
-       for(var i=0; i<timeslotTimes.length; i++) {
+        for(var i=0; i<timeslotTimes.length; i++) {
             var startTime = timeslotTimes[i].start; 
             var endTime = timeslotTimes[i].end;
             var startSelected = "";
@@ -186,18 +232,18 @@ $(document).ready(function() {
         $startTimeField.trigger("change");
     }
    
-   var $endTimeField = $("select[name='end']"); 
-   var $endTimeOptions = $endTimeField.find("option"); 
+    var $endTimeField = $("select[name='end']");
+    var $endTimeOptions = $endTimeField.find("option");
     
-   //reduces the end time options to be only after the start time options.
-   $("select[name='start']").change(function(){
+    //reduces the end time options to be only after the start time options.
+    $("select[name='start']").change(function(){
         var startTime = $(this).find(":selected").val();
         var currentEndTime = $endTimeField.find("option:selected").val();
         $endTimeField.html(
             $endTimeOptions.filter(function(){
                 return startTime < $(this).val();
             })
-        );
+            );
         
         var endTimeSelected = false;
         $endTimeField.find("option").each(function() {
@@ -209,8 +255,8 @@ $(document).ready(function() {
         });
         
         if(!endTimeSelected) {
-           //automatically select an end date 2 slots away. 
-           $endTimeField.find("option:eq(1)").attr("selected", "selected");
+            //automatically select an end date 2 slots away.
+            $endTimeField.find("option:eq(1)").attr("selected", "selected");
         }
         
     }); 
@@ -220,18 +266,18 @@ $(document).ready(function() {
     
     $("#about_button").click(function(){
         $about.dialog({
-                title: "About this calendar demo",
-                width: 600,
-                close: function() {
-                   $about.dialog("destroy");
-                   $about.hide();
-                },
-                buttons: {
-                    close : function(){
-                        $about.dialog("close");
-                    }
+            title: "About this calendar demo",
+            width: 600,
+            close: function() {
+                $about.dialog("destroy");
+                $about.hide();
+            },
+            buttons: {
+                close : function(){
+                    $about.dialog("close");
                 }
-            }).show();
+            }
+        }).show();
     });
     
 

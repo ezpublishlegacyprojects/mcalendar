@@ -11,21 +11,17 @@
   \class eZiCalExtendedFilter eZiCalExtendedFilter.php
   \brief
 */
-class calendarExtendedFilter
-{
+class calendarExtendedFilter {
 
-    function CreateSqlParts( $params )
-    {
+    function CreateSqlParts( $params ) {
         $result = array( 'tables' => '', 'joins'  => '', 'columns' => '' );
 
         /* Paramètres */
-        if ( !isset($params['from_time']) || !isset($params['to_time']) )
-        {
+        if ( !isset($params['from_time']) || !isset($params['to_time'])) {
             return $result;
         }
         $fromTime = $params['from_time'];
         $toTime = $params['to_time'];
-
 
         $db = eZDB::instance();
         $CalendarRaw = Calendar::instance();
@@ -58,6 +54,22 @@ class calendarExtendedFilter
 
         $arrayCondition[] = "( from_time.sort_key_int BETWEEN $fromTime AND $toTime
                                OR to_time.sort_key_int BETWEEN $fromTime AND $toTime )";
+
+
+        $arrayTables[] = "ezcontentobject_attribute frequency";
+        $arrayJoins[] = "( frequency.contentobject_id = ezcontentobject.id
+                               AND frequency.contentclassattribute_id = $attributeFrequencyID
+                               AND frequency.version = ezcontentobject_name.content_version )";
+        $arrayTables[] = "ezcontentobject_attribute frequency_end";
+        $arrayJoins[] = "( frequency.contentobject_id = ezcontentobject.id
+                               AND frequency_end.contentclassattribute_id = $attributeFrequencyEndID
+                               AND frequency_end.version = ezcontentobject_name.content_version )";
+
+        $arrayCondition[] = "( frequency.sort_key_string != " . Calendar::FREQUENCY_NONE_ID ."
+                                   AND frequency_end.sort_key_int BETWEEN $fromTime AND $toTime )";
+        $arrayCondition[] = "( frequency.sort_key_string != " . Calendar::FREQUENCY_NONE_ID ."
+                                   AND ( frequency_end.sort_key_int = 0 ) )";
+
 
         $result['tables'] = ", " . implode( ', ', $arrayTables );
         $result['joins'] = implode( ' AND ', $arrayJoins ) . " AND (" . implode( ' OR ', $arrayCondition ) . ") AND ";;

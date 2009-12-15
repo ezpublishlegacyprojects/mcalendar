@@ -32,8 +32,7 @@
   \brief Différents opérateurs pour gérer les dates
  */
 
-class calendarContentObject
-{
+class calendarContentObject {
 
     public  $calendar;
     private $calendarFromTimeDate;
@@ -48,59 +47,51 @@ class calendarContentObject
 	 \param array
      \return array
      */
-    function __construct( $from_time, $to_time)
-    {
+    function __construct( $from_time, $to_time) {
         /* Définition du calendrier */
         $this->calendarFromTimeDate = new calDate($from_time);
         $this->calendarToTimeDate = new calDate($to_time);
         $this->calendarFromTimeDayOfWeek = date('N', $this->calendarFromTimeDate->timeStamp() );
         $this->calendar = array();
 
-     }
+    }
 
-    function view($events,$view='month'){
+    function view($events,$view='month') {
         $CalendarRaw = Calendar::instance();
-                foreach ( $events as $event )
-        {
+        foreach ( $events as $event ) {
             $eventdataMap = $event->dataMap();
             $eventFromTimeDate = new calDate( $eventdataMap[$CalendarRaw->eventClass['Dictionary']['DTSTART']]->content()->attribute('timestamp') );
             $eventToTimeDate = new calDate( $eventdataMap[$CalendarRaw->eventClass['Dictionary']['DTEND']]->content()->attribute('timestamp') );
             /*
              * One day event
              */
-            if ( self::isSameDay($eventFromTimeDate, $eventToTimeDate) )
-            {
+            if ( self::isSameDay($eventFromTimeDate, $eventToTimeDate) ) {
                 /* Non recurrent event case */
-                if ( !self::hasFrequency($event) )
-                {
-                   $this->addSimpleEvent( $event, $eventFromTimeDate,$view);
+                if ( !self::hasFrequency($event) ) {
+                    $this->addSimpleEvent( $event, $eventFromTimeDate,$view);
                 }
                 /* Recurrent event case */
-                else
-                {
+                else {
                     $this->addFrequentEvent( $event, $eventFromTimeDate, $eventToTimeDate,$view );
                 }
             }
             /*
              * Multiple days event
              */
-            else
-            {
+            else {
                 $this->addMultiDaysEvent( $event, $eventFromTimeDate, $eventToTimeDate,$view);
             }
         }
-     return true;
+        return true;
 
-     }
+    }
 /*
 	 \param $toDate calDate
 	 \param $toDate calDate
  	 \return bolean
      */
-    static function isSameDay( $fromDate, $toDate )
-    {
-        if ( $fromDate->timeStamp() == $toDate->timeStamp() || $toDate->timeStamp() == 0||$toDate->timeStamp()==-3600 )
-        {
+    static function isSameDay( $fromDate, $toDate ) {
+        if ( $fromDate->timeStamp() == $toDate->timeStamp() || $toDate->timeStamp() == 0||$toDate->timeStamp()==-3600 ) {
             return true;
         }
         return false;
@@ -111,8 +102,7 @@ class calendarContentObject
 	 \params $event eZContentObjectTreeNode
 	 \return bolean
      */
-    static function hasFrequency ( $event )
-    {
+    static function hasFrequency ( $event ) {
         $CalendarRaw = Calendar::instance();
         $dataMap = $event->dataMap();
         $attributeFrequency = $CalendarRaw->eventClass['Dictionary']['Frequency'];
@@ -121,49 +111,62 @@ class calendarContentObject
         else:
             $frequency=array(0);
         endif;
-        if ( strtolower($attributeFrequency) == 'disabled' || $frequency[0] == Calendar::FREQUENCY_NONE_ID )
-        {
+        if ( strtolower($attributeFrequency) == 'disabled' || $frequency[0] == Calendar::FREQUENCY_NONE_ID ) {
             return false;
         }
-      
+
         return true;
     }
 
 
 
-    private function addEvent( $event,$timeStamp,$view)
-    {
+    private function addEvent( $event,$timeStamp,$view) {
         $CalendarRaw = Calendar::instance();
         $attribute = $CalendarRaw->eventClass['Dictionary']['FullDay'];
         $nature = 'partial';
-        if ( strtolower($attribute) != 'disabled' && $this->dataMap[$attribute]->content() )
-        {
+        if ( strtolower($attribute) != 'disabled' && $this->dataMap[$attribute]->content() ) {
             $nature = 'full';
         }
-
         switch($view):
-           case 'month':
-              $this->calendar[(int)$timeStamp->year()]
-                           [(int)$timeStamp->month()][(int)$timeStamp->day()][$nature][] = $event;
-            break;
-           case 'week':
-              $this->calendar[(int)$timeStamp->year()]
-                             [(int)$timeStamp->week()][(int)$timeStamp->dayW()][$nature][] = $event;
-            break;
+            case 'month':
+                $this->calendar[(int)$timeStamp->year()]
+                    [(int)$timeStamp->month()][(int)$timeStamp->day()][$nature][] = $event;
+                break;
+            case 'week':
+                $this->calendar[(int)$timeStamp->year()]
+                    [(int)$timeStamp->week()][(int)$timeStamp->dayW()][$nature][] = $event;
+                break;
+            case 'ajaxweek':
+                $attributes=$event->ContentObject->contentObjectAttributes(false);
+
+                $out=$event->canEdit();
+                $shortTitle=$attributes[0]->DataText;
+                $textContent=$attributes[2]->DataText;
+                $fromTime=(int)($attributes[4]->DataInt);
+                $toTime=(int)($attributes[5]->DataInt);
+                $frequency=(int)($attributes[6]->DataText);
+                $isMain=true;
+                $currentTimeStamp=$timeStamp->timeStamp();
+                if(!$toTime) $toTime=$currentTimeStamp+86399;
+                if ($frequency>0) {
+                    $toTimeMain=$toTime;
+                    $toTime=mktime( (int)(date('G',$toTime)),(int)(date('i',$toTime)),0,(int)$timeStamp->month(),(int)$timeStamp->day(),(int)$timeStamp->year());
+                    // $toTime=($currentTimeStamp+$toTime%86400+1);
+                    $fromTime=mktime( (int)(date('G',$fromTime)),(int)(date('i',$fromTime)),0,(int)$timeStamp->month(),(int)$timeStamp->day(),(int)$timeStamp->year());
+                //$fromTime=($currentTimeStamp+$fromTime%86400+1);
+                    if( $toTime>$toTimeMain+100) $isMain=false;
+                }
+                $this->calendar[]=array('id'=>(int)($event->NodeID),
+                                    'start'=>$fromTime*1000,'end'=>$toTime*1000,'title'=>$shortTitle,
+                                    'nodeId'=>$event->NodeID,'parentNodeId'=>$event->ParentNodeID,
+                                    'urlAlias'=>$event->PathIdentificationString,'currentLanguage'=>$event->CurrentLanguage,
+                                    'objectId'=>$event->ContentObjectID,'frequency'=>$frequency,'isMain'=>$isMain);
+                break;
             case 'plain':
                 $this->calendar[]=$event;
-            break;
+                break;
             default:
-         endswitch;
-
-        //$date = new calDate();
-        //$date->setMDY( $year, $month, $day );
-        
-        //ezDate dosn't return week number
-        //$weekNumber=date('W',$eventFromTimeDate->timeStamp());
-        //$this->calendarWeekView[(int)$year][(int)$weekNumber][(int)$day][]=$event;
-        //$this->calendar[intval($year)][intval($month)][intval($day)]['date'][] = $date;
-
+        endswitch;
         return true;
     }
 
@@ -176,10 +179,9 @@ class calendarContentObject
      \param $eventFromTimeDate calDate
      \return boolean
      */
-    private function addSimpleEvent( $event, $eventFromTimeDate,$view )
-    {
-       $this->addEvent($event,$eventFromTimeDate,$view );
-     return true;
+    private function addSimpleEvent( $event, $eventFromTimeDate,$view ) {
+        $this->addEvent($event,$eventFromTimeDate,$view );
+        return true;
     }
 
 
@@ -192,27 +194,22 @@ class calendarContentObject
      \param $eventToTimeDate calDate
      \return boolean
      */
-    private function addMultiDaysEvent( $event, $eventFromTimeDate, $eventToTimeDate,$view)
-    {
+    private function addMultiDaysEvent( $event, $eventFromTimeDate, $eventToTimeDate,$view) {
         $cursorDate = new calDate( max($this->calendarFromTimeDate->timeStamp(), $eventFromTimeDate->timeStamp()) );
         $cursorEndDate = new calDate( min($this->calendarToTimeDate->timeStamp(), $eventToTimeDate->timeStamp()) );
 
         /* Cas d'un évènement non-récurent */
-    	if ( !self::hasFrequency( $event ) )
-        {
-            while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() )
-            {
-                if ( $eventFromTimeDate->timeStamp() <= $cursorDate->timeStamp() || $cursorDate->timeStamp() > $eventToTimeDate->timeStamp() )
-                {
+        if ( !self::hasFrequency( $event ) ) {
+            while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() ) {
+                if ( $eventFromTimeDate->timeStamp() <= $cursorDate->timeStamp() || $cursorDate->timeStamp() > $eventToTimeDate->timeStamp() ) {
                     $this->addEvent($event,$cursorDate,$view );
-                
+
                 }
                 $cursorDate->adjustDate(0, 1);
             }
         }
         /* Cas d'un évènement récurent */
-        else
-        {
+        else {
             eZDebug::writeWarning( $event->Name . " : Frequency event on few day is not implemented" );
         }
     }
@@ -227,8 +224,7 @@ class calendarContentObject
      \param $eventToTimeDate calDate
      \return boolean
      */
-    private function addFrequentEvent( $event, $eventFromTimeDate, $eventToTimeDate,$view)
-    {
+    private function addFrequentEvent( $event, $eventFromTimeDate, $eventToTimeDate,$view) {
         $CalendarRaw = Calendar::instance();
         $eventdataMap = $event->dataMap();
         $frequency = $eventdataMap[$CalendarRaw->eventClass['Dictionary']['Frequency']]->content();
@@ -236,19 +232,16 @@ class calendarContentObject
         $frequencyEndDate = new calDate( $frequencyEnd );
 
         $cursorDate = new calDate( max($this->calendarFromTimeDate->timeStamp(), $eventFromTimeDate->timeStamp()) );
-        if ( $frequencyEnd == 0 )
-        {
+        if ( $frequencyEnd == 0 ) {
             $cursorEndDate = new calDate( $this->calendarToTimeDate->timeStamp() );
         }
-        else
-        {
+        else {
             $cursorEndDate = new calDate( min($this->calendarToTimeDate->timeStamp(), $frequencyEnd) );
         }
 
         $eventDayOfYear = date('Z', $eventToTimeDate->timeStamp() );
 
-        switch ( $frequency[0] )
-        {
+        switch ( $frequency[0] ) {
             /* Jours ouvrés */
             case Calendar::FREQUENCY_DAILY_OPEN_ID:
                 $this->addDailyOpenEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
@@ -291,18 +284,15 @@ class calendarContentObject
      \param $eventToTimeDate
      \TODO Définir les jours ouvrables...
      */
-    private function addDailyOpenEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view)
-    {
+    private function addDailyOpenEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view) {
         $eventDayOfWeek = date('N', $eventToTimeDate->timeStamp() );
-        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() )
-        {
+        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() ) {
             $cursorDayOfWeek = date('N', $cursorDate->timeStamp() );
-            if ( $cursorDayOfWeek < 6 )
-            {
-                
-           $this->addEvent($event,$cursorDate,$view );
-                      
-              }
+            if ( $cursorDayOfWeek < 6 ) {
+
+                $this->addEvent($event,$cursorDate,$view );
+
+            }
             $cursorDate->adjustDate(0, 1);
         }
     }
@@ -314,12 +304,10 @@ class calendarContentObject
      \param $cursorEndDate
      \param $eventToTimeDate
      */
-    private function addDailyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view )
-    {
-        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() )
-        {
-          $this->addEvent($event,$cursorDate,$view );
-          $cursorDate->adjustDate(0, 1);
+    private function addDailyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view ) {
+        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() ) {
+            $this->addEvent($event,$cursorDate,$view );
+            $cursorDate->adjustDate(0, 1);
         }
     }
     /*!
@@ -330,25 +318,22 @@ class calendarContentObject
      \param $cursorEndDate
      \param $eventToTimeDate
      */
-    private function addWeeklyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view )
-    {
+    private function addWeeklyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view ) {
         $eventDayOfWeek = date('N', $eventToTimeDate->timeStamp() );
         $cursorDayOfWeek = date('N', $cursorDate->timeStamp() );
         $goTo = $eventDayOfWeek - $cursorDayOfWeek;
 
-        if ( $goTo >= 0)
-        {
+        if ( $goTo >= 0) {
             $cursorDate->adjustDate(0, $goTo);
         }
-        else{
+        else {
             $cursorDate->adjustDate(0, $goTo+7);
         }
 
-        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() )
-        {
+        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() ) {
 
-              $this->addEvent($event,$cursorDate,$view );
-                       
+            $this->addEvent($event,$cursorDate,$view );
+
 
             $cursorDate->adjustDate(0, 7);
         }
@@ -361,36 +346,31 @@ class calendarContentObject
      \param $cursorEndDate
      \param $eventToTimeDate
      */
-    private function addBiMonthlyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view )
-    {
+    private function addBiMonthlyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view ) {
         $eventDayOfWeek = date('N', $eventToTimeDate->timeStamp() );
         $cursorDayOfWeek = date('N', $cursorDate->timeStamp() );
         $eventWeekOfUnix = floor($eventToTimeDate->timeStamp() / 604800);
 
 
         $goTo = $eventDayOfWeek - $cursorDayOfWeek;
-        if ( $goTo >= 0)
-        {
+        if ( $goTo >= 0) {
             $cursorDate->adjustDate(0, $goTo);
         }
-        else{
+        else {
             $cursorDate->adjustDate(0, $goTo+7);
         }
 
-        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() )
-        {
+        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() ) {
             $cursorWeekOfUnix = floor($cursorDate->timeStamp() / 604800);
-            if ( $eventWeekOfUnix % 2 == $cursorWeekOfUnix % 2 )
-            {
+            if ( $eventWeekOfUnix % 2 == $cursorWeekOfUnix % 2 ) {
 
-                
+
                 $this->addEvent($event,$cursorDate,$view );
-                        
+
 
                 $cursorDate->adjustDate(0, 14);
             }
-            else
-            {
+            else {
                 $cursorDate->adjustDate(0, 7);
             }
         }
@@ -404,22 +384,19 @@ class calendarContentObject
      \param $cursorEndDate
      \param $eventToTimeDate
      */
-    private function addMonthlyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view )
-    {
+    private function addMonthlyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view ) {
         $goTo = $eventToTimeDate - $cursorDate->day();
-        if ( $goTo >= 0)
-        {
+        if ( $goTo >= 0) {
             $cursorDate->adjustDate(0, $goTo);
         }
-        else{
+        else {
             $cursorDate->adjustDate(1, $goTo);
         }
 
-        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() )
-        {
-            
-      $this->addEvent($event,$cursorDate,$view);
-                       
+        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() ) {
+
+            $this->addEvent($event,$cursorDate,$view);
+
 
             $cursorDate->adjustDate(1);
         }
@@ -432,18 +409,15 @@ class calendarContentObject
      \param $cursorEndDate
      \param $eventToTimeDate
      */
-    private function addAnnualEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate ,$view)
-    {
+    private function addAnnualEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate ,$view) {
         $goTo = new calDate();
         $goTo->setMDY( $eventToTimeDate->month(), $eventToTimeDate->day(), $cursorDate->year() );
 
-        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() )
-        {
-            if ( $cursorDate->timeStamp() <= $goTo->timeStamp() && $goTo->timeStamp() < $cursorEndDate->timeStamp() )
-            {
-                
-              $this->addEvent($event,$cursorDate,$view);
-               
+        while ( $cursorDate->timeStamp() <= $cursorEndDate->timeStamp() ) {
+            if ( $cursorDate->timeStamp() <= $goTo->timeStamp() && $goTo->timeStamp() < $cursorEndDate->timeStamp() ) {
+
+                $this->addEvent($event,$cursorDate,$view);
+
 
             }
             $cursorDate->adjustDate(12);

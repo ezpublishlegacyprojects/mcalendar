@@ -42,7 +42,7 @@ class calendarFetchFunctions
      \param $to_time timestamp
      \return eZiCalContentObjectCalendar
      */
-    public function fetchEvents( $parent_node_id, $from_time, $to_time,$view,$method='list' )
+    public static function fetchEvents( $parent_node_id, $from_time, $to_time,$view,$method='list' )
     {
         $CalendarRaw = Calendar::instance();
         $attributeBeginDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTSTART'];
@@ -63,7 +63,7 @@ class calendarFetchFunctions
         return array( 'result' => $calendar->calendar );
     }
 
-   public function multiFetchEvents( $parent_node_ids, $from_time, $to_time,$view,$method='list' )
+   public static function multiFetchEvents( $parent_node_ids, $from_time, $to_time,$view,$method='list' )
     {
         $CalendarRaw = Calendar::instance();
         $attributeBeginDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTSTART'];
@@ -97,10 +97,34 @@ class calendarFetchFunctions
      \param $to_time
      \return eZiCalContentObjectCalendar
      */
-    public function fetchEventsTree( $parent_node_id, $from_time, $to_time )
+    public static function fetchEventsTree( $parent_node_id, $from_time, $to_time )
     {
         return $this->fetchEvents( $parent_node_id, $from_time, $to_time, 'tree' );
     }
+
+    public static function fetchEventsAjax( $parent_node_id, $from_time, $to_time,$view,$method='list' )
+    {
+        $CalendarRaw = Calendar::instance();
+        $attributeBeginDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTSTART'];
+
+        $events = eZFunctionHandler::execute( 'content', 'tree', array(
+                'parent_node_id' => $parent_node_id,
+                'sort_by' => array( 'attribute', true, $attributeBeginDate ),
+                'class_filter_type' => 'include',
+                'class_filter_array' => array('event'),
+                'main_node_only' => true,
+                'extended_attribute_filter' => array( 'id' => 'McalendarCalendar',
+                                                      'params' => array( 'from_time' => $from_time,
+                                                                         'to_time' => $to_time) ) ) );
+
+        $calendar = new calendarContentObject( $from_time, $to_time);
+
+        $calendar->view($events,$view);
+        return array("events"=>$calendar->calendar);
+    }
+
+
+
 }
 
 ?>
