@@ -8,7 +8,7 @@
 {run-once}
 {ezcss_require(array('fullcalendar.css','mcalendar.css'))}
 {ezscript_require( array( concat( 'ezjsc::', 'jqueryio' ),
-        'jquery-ui-min.js','classes/fullcalendar.js',
+        'classes/jquery-ui-min.js','classes/fullcalendar.js',
         'fcalendar.js','classes/dialogs.js' ))}
 {/run-once}
 
