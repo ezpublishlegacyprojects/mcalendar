@@ -34,7 +34,10 @@
             right: 'today prev,next'
         },
         weekends: true,
-	
+	// editing
+	//editable: false,
+	//disableDragging: false,
+	//disableResizing: false,
         allDayDefault: true,
 	
         // event ajax
@@ -1352,7 +1355,7 @@
     setDefaults({
         allDaySlot: true,
         allDayText: 'all-day',
-        firstHour: 9,
+        firstHour: 6,
         slotMinutes: 30,
         defaultEventMinutes: 120,
         axisFormat: 'h(:mm)tt',
@@ -1530,7 +1533,7 @@
                     addMinutes(d, options.slotMinutes);
                 }
                 s += "</table>";
-                body = $("<div class='fc-agenda-body' style='position:relative;z-index:2;overflow:autobody'/>")
+                body = $("<div class='fc-agenda-body' style='position:relative;z-index:2;overflow:auto'/>")
                 .append(bodyContent = $("<div style='position:relative;overflow:hidden'>")
                     .append(bodyTable = $(s)))
                 .appendTo(element);

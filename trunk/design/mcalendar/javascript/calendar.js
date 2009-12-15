@@ -4,8 +4,7 @@ $(document).ready(function() {
     var id = 10;
     var $actionUrl =$('p[title="action"]').text();
     var $editIcon=$('p[title="editIcon"]').text();
-
-   
+  
     $calendar.weekCalendar({
         timeslotsPerHour : 4,
         allowCalEventOverlap : true,

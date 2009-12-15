@@ -120,7 +120,10 @@ class calendarFetchFunctions
         $calendar = new calendarContentObject( $from_time, $to_time);
 
         $calendar->view($events,$view);
-        return array("events"=>$calendar->calendar);
+        #jquery weekcalendar
+        #return array("events"=>$calendar->calendar);
+        #jquery fullcalendar
+        return $calendar->calendar;
     }
 
 

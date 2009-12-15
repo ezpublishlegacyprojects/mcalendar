@@ -257,7 +257,7 @@
          */
         _renderCalendar : function() {
             
-            var $calendarContainer, calendarNavHtml, calendarHeaderHtml, calendarBodyHtml, $weekDayColumns;
+            var $calendarContainer, calendarNavHtml;
             var self = this;
             var options = this.options;
             
@@ -268,6 +268,7 @@
                     <button class=\"today\">" + options.buttonText.today + "</button>\
                     <button class=\"prev\">" + options.buttonText.lastWeek + "</button>\
                     <button class=\"next\">" + options.buttonText.nextWeek + "</button>\
+                    <button class=\"monthview\">Month</button>\
                     </div>";
                     
                 $(calendarNavHtml).appendTo($calendarContainer);
@@ -286,16 +287,62 @@
                     self.element.weekCalendar("nextWeek");
                     return false;
                 });
+                 $calendarContainer.find(".calendar-nav .monthview").click(function(){
+                    self.element.weekCalendar("viewMonth");
+                    return false;
+                });
+
                 
             }
+
+            self._renderCalendarMonth(options,$calendarContainer);
             
+            
+            
+        },
+        
+
+        _renderCalendarMonth: function(options,$calendarContainer){
+             var self = this;
+             var calendarHeaderHtml, calendarBodyHtml, $weekDayColumns;
+             calendarHeaderHtml = "<table class=\"month-calendar-header\"><tbody><tr><td class=\"time-column-header\"></td>";
+             for(var i=1 ; i<=7; i++) {
+                calendarHeaderHtml += "<td class=\"day-column-header day-" + i + "\"></td>";
+            }
+            calendarHeaderHtml += "<td class=\"scrollbar-shim\"></td></tr></tbody></table>";
+            calendarBodyHtml = "<div class=\"calendar-scrollable-grid\">\
+                <table class=\"month-calendar-time-slots\">\
+                <tbody>\
+                <td colspan=\"7\" class=\"grid-timeslot-header\"></td>";
+            for (i=1; i<6;i++){
+                
+                calendarBodyHtml+="<tr>"
+                
+                for(j=1;j<8;j++){
+                    calendarBodyHtml+="<td></td>"
+                }
+                calendarBodyHtml+="</tr>"
+            }
+            
+            calendarBodyHtml += "</tbody></table></div>";
+
+            $(calendarHeaderHtml + calendarBodyHtml).appendTo($calendarContainer);
+        },
+
+
+
+
+        _renderCalendarWeek: function(options,$calendarContainer){
+
+             var self = this;
+             var calendarHeaderHtml, calendarBodyHtml, $weekDayColumns;
             //render calendar header
-            calendarHeaderHtml = "<table class=\"week-calendar-header\"><tbody><tr><td class=\"time-column-header\"></td>"; 
+            calendarHeaderHtml = "<table class=\"week-calendar-header\"><tbody><tr><td class=\"time-column-header\"></td>";
             for(var i=1 ; i<=7; i++) {
                 calendarHeaderHtml += "<td class=\"day-column-header day-" + i + "\"></td>";
             }
             calendarHeaderHtml += "<td class=\"scrollbar-shim\"></td></tr></tbody></table>";
-                        
+
             //render calendar body
             calendarBodyHtml = "<div class=\"calendar-scrollable-grid\">\
                 <table class=\"week-calendar-time-slots\">\
@@ -305,22 +352,22 @@
                 <td colspan=\"7\">\
                 <div class=\"time-slot-wrapper\">\
                 <div class=\"time-slots\">";
-            
+
             var start = options.businessHours.limitDisplay ? options.businessHours.start : 0;
-            var end = options.businessHours.limitDisplay ? options.businessHours.end : 24;    
-                
+            var end = options.businessHours.limitDisplay ? options.businessHours.end : 24;
+
             for(var i = start ; i < end; i++) {
                 for(var j=0;j<options.timeslotsPerHour - 1; j++) {
                     calendarBodyHtml += "<div class=\"time-slot\"></div>";
-                }   
-                calendarBodyHtml += "<div class=\"time-slot hour-end\"></div>"; 
+                }
+                calendarBodyHtml += "<div class=\"time-slot hour-end\"></div>";
             }
-            
+
             calendarBodyHtml += "</div></div></td></tr><tr><td class=\"grid-timeslot-header\">";
-        
+
             for(var i = start ; i < end; i++) {
-    
-                var bhClass = (options.businessHours.start <= i && options.businessHours.end > i) ? "business-hours" : "";                 
+
+                var bhClass = (options.businessHours.start <= i && options.businessHours.end > i) ? "business-hours" : "";
                 calendarBodyHtml += "<div class=\"hour-header " + bhClass + "\">"
                 if(options.use24Hour) {
                    calendarBodyHtml += "<div class=\"time-header-cell\">" + self._24HourForIndex(i) + "</div>";
@@ -329,38 +376,36 @@
                 }
                 calendarBodyHtml += "</div>";
             }
-            
+
             calendarBodyHtml += "</td>";
-            
+
             for(var i=1 ; i<=7; i++) {
                 calendarBodyHtml += "<td class=\"day-column day-" + i + "\"><div class=\"day-column-inner\"></div></td>"
             }
-            
+
             calendarBodyHtml += "</tr></tbody></table></div>";
-            
-            //append all calendar parts to container            
+
+            //append all calendar parts to container
             $(calendarHeaderHtml + calendarBodyHtml).appendTo($calendarContainer);
-            
+
             $weekDayColumns = $calendarContainer.find(".day-column-inner");
             $weekDayColumns.each(function(i, val) {
-                $(this).height(options.timeslotHeight * options.timeslotsPerDay); 
+                $(this).height(options.timeslotHeight * options.timeslotsPerDay);
                 if(!options.readonly) {
                    self._addDroppableToWeekDay($(this));
                    self._setupEventCreationForWeekDay($(this));
                 }
             });
-            
+
             $calendarContainer.find(".time-slot").height(options.timeslotHeight -1); //account for border
-            
+
             $calendarContainer.find(".time-header-cell").css({
                     height :  (options.timeslotHeight * options.timeslotsPerHour) - 11,
                     padding: 5
                     });
-    
-            
-            
+
         },
-        
+
         /*
          * setup mouse events for capturing new events
          */
@@ -449,7 +494,7 @@
             
             $weekDayColumns = self.element.find(".day-column-inner");
             
-            self._updateDayColumnHeader($weekDayColumns);
+            self._updateDayColumnHeader($weekDayColumns,'month');
             
             //load events by chosen means        
             if (typeof options.data == 'string') {
@@ -480,12 +525,14 @@
         /*
          * update the display of each day column header based on the calendar week
          */
-        _updateDayColumnHeader : function ($weekDayColumns) {
+        _updateDayColumnHeader : function ($weekDayColumns,view) {
             var self = this;
             var options = this.options;            
             var currentDay = self._cloneDate(self.element.data("startDate"));
-    
-            self.element.find(".week-calendar-header td.day-column-header").each(function(i, val) {
+
+            var element="."+view+"-calendar-header td.day-column-header";
+
+            self.element.find(element).each(function(i, val) {
                 
                     var dayName = options.useShortDayNames ? options.shortDays[currentDay.getDay()] : options.longDays[currentDay.getDay()];
                 
@@ -546,7 +593,7 @@
                     self.element.empty();
                     self._renderCalendar();
                     $weekDayColumns = self.element.find(".week-calendar-time-slots .day-column-inner");
-                    self._updateDayColumnHeader($weekDayColumns);
+                    self._updateDayColumnHeader($weekDayColumns,'month');
                     self._resizeCalendar();
                 }
                 

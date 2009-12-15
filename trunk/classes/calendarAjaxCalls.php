@@ -69,40 +69,32 @@ class calendarAjaxCalls {
 
 /***************************************************************
 *
-*DEPRECATED
+*update event start and end time
 *
 *
 ***************************************************************/
-    public static function addEvent($args) {
-        $user = eZUser::currentUser();
-        $parentNodeId=$args[0];
-        $fromTime=$args[1];
-        $toTime=$args[2];
-        $arguments=json_decode($_POST['postdata'],true);
 
-        $xmlText='<?xml version="1.0" encoding="utf-8"?>
-                <section xmlns:image="http://ez.no/namespaces/ezpublish3/image/"
-                         xmlns:xhtml="http://ez.no/namespaces/ezpublish3/xhtml/"
-                         xmlns:custom="http://ez.no/namespaces/ezpublish3/custom/">
-                        <paragraph>'.$arguments['text'].'</paragraph></section>';
-        $params = array();
-        $params['creator_id'] = $user->id();
-        $params['parent_node_id'] = (int)$parentNodeId;
-        $params['class_identifier'] = 'event';
-        $params['attributes']=array('short_title'=>$arguments['short_title'],'text'=>$xmlText,
-            'from_time'=>$fromTime,'to_time'=>$toTime,'frequency'=>'0','frequency_end'=>$toTime);
-        $newObject = eZContentFunctions::createAndPublishObject($params);
-        $node = eZContentObjectTreeNode::fetch( $newObject->attribute( 'main_node_id' ) );
-        $data=array();
-        $data['url_alias']=$node->urlAlias();
-        $data['object_id']=$newObject->ID;
-        $data['node_id']=$newObject->attribute( 'main_node_id' );
-        $data['current_language']=$newObject->currentLanguage();
-        $data['title']=$arguments['short_title'];
-        return $data;
+    public static function updateEventTimeSlot($args) {
+        $objectId=$args[0];
+        $event=eZContentObject::fetch($objectId);
+        if($event->canEdit()) {
+          $mod_attributes=array('to_time'=>array('data_int',(int)$args[2]),
+                'from_time'=>array('data_int',(int)$args[1]));
+
+            $datamap=$event->attribute('data_map');
+            foreach($mod_attributes as $key=>$content) {
+                $current_attribute=$datamap[$key];
+                $current_attribute->setAttribute($content[0],$content[1]);
+                $current_attribute->sync();
+            }
+
+        }
+        else {
+            return 'You are not allowed to edit this event';
+        }
+        return 'Edit success';
 
     }
-
 /*****************************************************************
  * $ajaxid=fake id to synx with ajax frontend
  * This method creates an event object from ajax input

@@ -157,10 +157,12 @@ class calendarContentObject {
                     if( $toTime>$toTimeMain+100) $isMain=false;
                 }
                 $this->calendar[]=array('id'=>(int)($event->NodeID),
-                                    'start'=>$fromTime*1000,'end'=>$toTime*1000,'title'=>$shortTitle,
+                                    'start'=>$fromTime,'end'=>$toTime,'title'=>$shortTitle,
                                     'nodeId'=>$event->NodeID,'parentNodeId'=>$event->ParentNodeID,
                                     'urlAlias'=>$event->PathIdentificationString,'currentLanguage'=>$event->CurrentLanguage,
                                     'objectId'=>$event->ContentObjectID,'frequency'=>$frequency,'isMain'=>$isMain);
+
+
                 break;
             case 'plain':
                 $this->calendar[]=$event;
