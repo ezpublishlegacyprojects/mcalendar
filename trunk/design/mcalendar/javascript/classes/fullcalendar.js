@@ -1622,7 +1622,7 @@
 		
             // need this for IE6/7. triggers clientWidth to be calculated for
             // later user in this function. this is ridiculous
-            body[0].clientWidth;
+            //body[0].clientWidth;
 		
             var topTDs = head.find('tr:first th'),
             stripeTDs = bg.find('td'),
