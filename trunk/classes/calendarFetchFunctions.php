@@ -1,47 +1,20 @@
 <?php
-//
-// Definition of eZiCalFetchFunctions class
-//
-// Created on: <01-Sep-2008 19:00:00 bf>
-//
-// SOFTWARE NAME: eZiCal
-// SOFTWARE RELEASE: 0.1
-// BUILD VERSION:
-// COPYRIGHT NOTICE: Copyright (c) 2008 Guillaume Kulakowski and contributors
-// SOFTWARE LICENSE: GNU General Public License v2.0
-// NOTICE: >
-//   This program is free software; you can redistribute it and/or
-//   modify it under the terms of version 2.0  of the GNU General
-//   Public License as published by the Free Software Foundation.
-//
-//   This program is distributed in the hope that it will be useful,
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//   GNU General Public License for more details.
-//
-//   You should have received a copy of version 2.0 of the GNU General
-//   Public License along with this program; if not, write to the Free
-//   Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-//   MA 02110-1301, USA.
-//
-//
+/***********************************************************************************
+ * Mcalendar fetch functions
+ *
+ *
+ ***********************************************************************************/
 
 
-/*! \file ezicalcontentobjectevent.php
-*/
-
-/*!
-  \class eZiCalFetchFunctions ezicalfetchfonctions.php
-  \brief Fonction fetch d'eZiCal
-*/
 class calendarFetchFunctions
 {
-    /*!
-    \param $parent_node_id integer
-     \aram $from_time timestamp
-     \param $to_time timestamp
-     \return eZiCalContentObjectCalendar
-     */
+   /*********************************************************************************
+    * Fetch events for a static calendar
+    * 
+    * 
+    ********************************************************************************/
+
+
     public static function fetchEvents( $parent_node_id, $from_time, $to_time,$view,$method='list' )
     {
         $CalendarRaw = Calendar::instance();
@@ -62,6 +35,14 @@ class calendarFetchFunctions
         $calendar->view($events,$view);
         return array( 'result' => $calendar->calendar );
     }
+
+    /*********************************************************************************
+    * Fetch events for a static multi calendar
+    *
+    *
+    ********************************************************************************/
+
+
 
    public static function multiFetchEvents( $parent_node_ids, $from_time, $to_time,$view,$method='list' )
     {
@@ -88,19 +69,23 @@ class calendarFetchFunctions
         return array( 'result' => $calendar->calendar );
     }
 
-
-    /*!
-     Identique à fetchEvents mais avec la récursivitée par rapport au noeud parent
-
-     \param $parent_node_id
-     \aram $from_time
-     \param $to_time
-     \return eZiCalContentObjectCalendar
-     */
+/*********************************************************************************
+ * Fetch all events under a calendar object
+ *
+ *
+  ********************************************************************************/
+   
     public static function fetchEventsTree( $parent_node_id, $from_time, $to_time )
     {
         return $this->fetchEvents( $parent_node_id, $from_time, $to_time, 'tree' );
     }
+
+ /*********************************************************************************
+ * Fetch events for ajax display
+ *
+ *
+ ********************************************************************************/
+
 
     public static function fetchEventsAjax( $parent_node_id, $from_time, $to_time,$view,$method='list' )
     {
@@ -120,9 +105,6 @@ class calendarFetchFunctions
         $calendar = new calendarContentObject( $from_time, $to_time);
 
         $calendar->view($events,$view);
-        #jquery weekcalendar
-        #return array("events"=>$calendar->calendar);
-        #jquery fullcalendar
         return $calendar->calendar;
     }
 

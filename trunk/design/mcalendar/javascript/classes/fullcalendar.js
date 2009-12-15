@@ -1,5 +1,5 @@
 /*!
- * FullCalendar v1.4.1
+ * FullCalendar v1.4.2
  * http://arshaw.com/fullcalendar/
  *
  * Use fullcalendar.css for basic styling.
@@ -11,8 +11,10 @@
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
  *
+ * Date: Wed Dec 2 22:03:57 2009 -0800
+ *
  */
- 
+
 (function($) {
 
 
@@ -34,17 +36,19 @@
             right: 'today prev,next'
         },
         weekends: true,
-	// editing
-	//editable: false,
-	//disableDragging: false,
-	//disableResizing: false,
+
+        // editing
+        //editable: false,
+        //disableDragging: false,
+        //disableResizing: false,
+
         allDayDefault: true,
-	
+
         // event ajax
         startParam: 'start',
         endParam: 'end',
         cacheParam: '_',
-	
+
         // time formats
         titleFormat: {
             month: 'MMMM yyyy',
@@ -79,14 +83,14 @@
             week: 'week',
             day: 'day'
         },
-	
+
         // jquery-ui theming
         theme: false,
         buttonIcons: {
             prev: 'circle-triangle-w',
             next: 'circle-triangle-e'
         }
-	
+
     };
 
     // right-to-left defaults
@@ -143,10 +147,10 @@
             eventSources.push(options.events);
             delete options.events;
         }
-	
+
         // first event source reserved for 'sticky' events
         eventSources.unshift([]);
-	
+
         // initialize options
         options = $.extend(true, {},
             defaults,
@@ -154,30 +158,32 @@
             options
             );
         var tm = options.theme ? 'ui' : 'fc'; // for making theme classes
-	
-	
+
+
         this.each(function() {
-	
-	
+
+
             /* Instance Initialization
 		-----------------------------------------------------------------------------*/
-		
+
             // element
             var _element = this,
             element = $(this).addClass('fc'),
-            content = $("<div class='fc-content " + tm + "-widget-content' style='position:relative'/>").appendTo(this); // relative for ie6
+            elementWidth,
+            content = $("<div class='fc-content " + tm + "-widget-content' style='position:relative'/>").appendTo(this), // relative for ie6
+            contentHeight;
             if (options.isRTL) {
                 element.addClass('fc-rtl');
             }
             if (options.theme) {
                 element.addClass('ui-widget');
             }
-		
+
             // view managing
             var date = new Date(),
             viewName, view, // the current view
             viewInstances = {};
-			
+
             if (options.year != undefined && options.year != date.getFullYear()) {
                 date.setDate(1);
                 date.setMonth(0);
@@ -190,12 +196,12 @@
             if (options.date != undefined) {
                 date.setDate(options.date);
             }
-		
-		
-		
+
+
+
             /* View Rendering
 		-----------------------------------------------------------------------------*/
-		
+
             function changeView(v) {
                 if (v != viewName) {
                     fixContentSize();
@@ -226,12 +232,15 @@
                     unfixContentSize();
                 }
             }
-		
-            function render(inc) {
-                if (_element.offsetWidth !== 0) { // visible on the screen
+
+            function render(inc, forceUpdateSize) {
+                if ((elementWidth = _element.offsetWidth) !== 0) { // visible on the screen
+                    if (!contentHeight) {
+                        contentHeight = calculateContentHeight();
+                    }
                     if (inc || !view.date || +view.date != +date) { // !view.date means it hasn't been rendered yet
                         fixContentSize();
-                        view.render(date, inc || 0, function(callback) {
+                        view.render(date, inc || 0, contentHeight, function(callback) {
                             // dont refetch if new view contains the same events (or a subset)
                             if (!eventStart || view.visStart < eventStart || view.visEnd > eventEnd) {
                                 fetchEvents(callback);
@@ -242,8 +251,8 @@
                         unfixContentSize();
                         view.date = cloneDate(date);
                     }
-                    else if (view.sizeDirty) {
-                        view.updateSize();
+                    else if (view.sizeDirty || forceUpdateSize) {
+                        view.updateSize(contentHeight);
                         view.rerenderEvents();
                     }
                     else if (view.eventsDirty) {
@@ -268,7 +277,7 @@
                     view.trigger('viewDisplay', _element);
                 }
             }
-		
+
             // marks other views' events as dirty
             function eventsDirtyExcept(exceptView) {
                 $.each(viewInstances, function() {
@@ -277,7 +286,14 @@
                     }
                 });
             }
-		
+
+            // called when any event objects have been added/removed/changed, rerenders
+            function eventsChanged() {
+                view.clearEvents();
+                view.renderEvents(events);
+                eventsDirtyExcept(view);
+            }
+
             // marks other views' sizes as dirty
             function sizesDirtyExcept(exceptView) {
                 $.each(viewInstances, function() {
@@ -286,22 +302,40 @@
                     }
                 });
             }
-		
-            // called when any event objects have been added/removed/changed, rerenders
-            function eventsChanged() {
-                view.clearEvents();
-                view.renderEvents(events);
-                eventsDirtyExcept(view);
+
+            // called when we know the element size has changed
+            function sizeChanged(fix) {
+                contentHeight = calculateContentHeight();
+                if (fix) {
+                    fixContentSize();
+                }
+                view.updateSize(contentHeight);
+                if (fix) {
+                    unfixContentSize();
+                }
+                sizesDirtyExcept(view);
+                view.rerenderEvents(true);
             }
-		
-		
-		
+
+            // calculate what the height of the content should be
+            function calculateContentHeight() {
+                if (options.contentHeight) {
+                    return options.contentHeight;
+                }
+                else if (options.height) {
+                    return options.height - (header ? header.height() : 0) - horizontalSides(content);
+                }
+                return elementWidth / options.aspectRatio;
+            }
+
+
+
             /* Event Sources and Fetching
 		-----------------------------------------------------------------------------*/
-		
+
             var events = [],
             eventStart, eventEnd;
-		
+
             // Fetch from ALL sources. Clear 'events' array and populate
             function fetchEvents(callback) {
                 events = [];
@@ -319,7 +353,7 @@
                     fetchEventSource(eventSources[i], sourceDone);
                 }
             }
-		
+
             // Fetch from a particular source. Append to the 'events' array
             function fetchEventSource(src, callback) {
                 var prevViewName = view.name,
@@ -356,63 +390,86 @@
                     reportEvents(src); // src is an array
                 }
             }
-		
-		
-		
+
+
+
             /* Loading State
 		-----------------------------------------------------------------------------*/
-		
+
             var loadingLevel = 0;
-		
+
             function pushLoading() {
                 if (!loadingLevel++) {
                     view.trigger('loading', _element, true);
                 }
             }
-		
+
             function popLoading() {
                 if (!--loadingLevel) {
                     view.trigger('loading', _element, false);
                 }
             }
-		
-		
-		
+
+
+
             /* Public Methods
 		-----------------------------------------------------------------------------*/
-		
+
             var publicMethods = {
-		
-                render: render,
+
+                render: function() {
+                    render(0, true); // true forces size to updated
+                },
+
                 changeView: changeView,
-			
+
+                getView: function() {
+                    return view;
+                },
+
+                getDate: function() {
+                    return date;
+                },
+
+                option: function(name, value) {
+                    if (value == undefined) {
+                        return options[name];
+                    }
+                    if (name == 'height' || name == 'contentHeight' || name == 'aspectRatio') {
+                        if (!contentSizeFixed) {
+                            options[name] = value;
+                            sizeChanged();
+                        }
+                    }
+                },
+
                 //
                 // Navigation
                 //
-			
+
                 prev: function() {
                     render(-1);
                 },
-			
+
                 next: function() {
                     render(1);
                 },
-			
+
                 prevYear: function() {
                     addYears(date, -1);
                     render();
                 },
-			
+
                 nextYear: function() {
                     addYears(date, 1);
                     render();
                 },
-			
+
                 today: function() {
                     date = new Date();
                     render();
                 },
-			
+
                 gotoDate: function(year, month, dateNum) {
                     if (typeof year == 'object') {
                         date = cloneDate(year); // provided 1 argument, a Date
@@ -429,28 +486,13 @@
                     }
                     render();
                 },
-
                 cformatDate: function(date,format) {
-                    
-                  
+                    return formatDate(date, options.timeFormat.agenda,options);
 
-                        return formatDate(date, options.timeFormat.agenda,options);
-                  
-                },
-                option1: function(name) {
+                }, getTimeslotTimes : function(date) {
 
-                          var v = options[name];
-
-                         if (typeof v == 'object') {
-                             return smartProperty(v, viewName || this.name);
-                        }
-                        return v;
-                    },
-                getTimeslotTimes : function(date) {
-                  
                     var firstHourDisplayed = options.firstHour;
                     var startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), firstHourDisplayed);
-
                     var times = []
                     var startMillis = startDate.getTime();
                     for(var i=0; i < options.timeslotsPerDay; i++) {
@@ -463,9 +505,10 @@
                         };
                         startMillis = endMillis;
                     }
-                   
+
                     return times;
                 },
+
                 incrementDate: function(years, months, days) {
                     if (years != undefined) {
                         addYears(date, years);
@@ -478,12 +521,13 @@
                     }
                     render();
                 },
-			
+
                 //
                 // Event Manipulation
                 //
-			
+
                 updateEvent: function(event) { // update an existing event
+                    
                     var i, len = events.length, e,
                     startDelta = event.start - event._start,
                     endDelta = event.end ?
@@ -502,6 +546,7 @@
                             }else{
                                 e.end = null;
                             }
+                                                      
                             e.title = event.title;
                             e.url = event.url;
                             e.allDay = event.allDay;
@@ -513,7 +558,7 @@
                     normalizeEvent(event, options);
                     eventsChanged();
                 },
-			
+
                 renderEvent: function(event, stick) { // render a new event
                     normalizeEvent(event, options);
                     if (!event.source) {
@@ -524,7 +569,7 @@
                     }
                     eventsChanged();
                 },
-			
+
                 removeEvents: function(filter) {
                     if (!filter) { // remove all
                         events = [];
@@ -551,7 +596,7 @@
                     }
                     eventsChanged();
                 },
-			
+
                 clientEvents: function(filter) {
                     if ($.isFunction(filter)) {
                         return $.grep(events, filter);
@@ -564,22 +609,22 @@
                     }
                     return events; // else, return all
                 },
-			
+
                 rerenderEvents: function() {
                     view.rerenderEvents();
                 },
-			
+
                 //
                 // Event Source
                 //
-		
+
                 addEventSource: function(source) {
                     eventSources.push(source);
                     fetchEventSource(source, function() {
                         eventsChanged();
                     });
                 },
-		
+
                 removeEventSource: function(source) {
                     eventSources = $.grep(eventSources, function(src) {
                         return src != source;
@@ -590,20 +635,20 @@
                     });
                     eventsChanged();
                 },
-			
+
                 refetchEvents: function() {
                     fetchEvents(eventsChanged);
                 }
-			
+
             };
-		
+
             $.data(this, 'fullCalendar', publicMethods);
-		
-		
-		
+
+
+
             /* Header
 		-----------------------------------------------------------------------------*/
-		
+
             var header,
             sections = options.header;
             if (sections) {
@@ -624,7 +669,7 @@
                         var prevButton;
                         $.each(this.split(','), function(j, buttonName) {
                             if (buttonName == 'title') {
-                                tr.append("<td><h2 class='fc-header-title'/></td>");
+                                tr.append("<td><h2 class='fc-header-title'>&nbsp;</h2></td>");
                                 if (prevButton) {
                                     prevButton.addClass(tm + '-corner-right');
                                 }
@@ -702,28 +747,27 @@
                     return $("<table/>").append(tr);
                 }
             }
-		
-		
-		
+
+
+
             /* Resizing
 		-----------------------------------------------------------------------------*/
-		
-            var elementWidth,
-            contentSizeFixed = false,
+
+            var contentSizeFixed = false,
             resizeCnt = 0;
-		
+
             function fixContentSize() {
                 if (!contentSizeFixed) {
                     contentSizeFixed = true;
                     content.css({
                         overflow: 'hidden',
-                        height: Math.round(content.width() / options.aspectRatio)
+                        height: contentHeight
                     });
                 // TODO: previous action might have caused scrollbars
                 // which will make the window width more narrow, possibly changing the aspect ratio
                 }
             }
-		
+
             function unfixContentSize() {
                 if (contentSizeFixed) {
                     content.css({
@@ -739,36 +783,45 @@
                     contentSizeFixed = false;
                 }
             }
-		
+
             $(window).resize(function() {
-                if (!contentSizeFixed && view.date) { // view.date means the view has been rendered
-                    var rcnt = ++resizeCnt; // add a delay
-                    setTimeout(function() {
-                        if (rcnt == resizeCnt && !contentSizeFixed) {
-                            var newWidth = element.width();
-                            if (newWidth != elementWidth) {
-                                elementWidth = newWidth;
-                                fixContentSize();
-                                view.updateSize();
-                                unfixContentSize();
-                                view.rerenderEvents(true);
-                                sizesDirtyExcept(view);
-                                view.trigger('windowResize', _element);
+                if (!contentSizeFixed) {
+                    if (view.date) { // view has already been rendered
+                        var rcnt = ++resizeCnt; // add a delay
+                        setTimeout(function() {
+                            if (rcnt == resizeCnt && !contentSizeFixed) {
+                                var newWidth = element.width();
+                                if (newWidth != elementWidth) {
+                                    elementWidth = newWidth;
+                                    sizeChanged(true);
+                                    view.trigger('windowResize', _element);
+                                }
                             }
-                        }
-                    }, 200);
+                        }, 200);
+                    }else{
+                        render(); // render for first time
+                    // was probably in a 0x0 iframe that has just been resized
+                    }
                 }
             });
-		
-		
+
+
             // let's begin...
             changeView(options.defaultView);
-            elementWidth = element.width();
-	
+
+            // in IE, when in 0x0 iframe, initial resize never gets called, so do this...
+            if ($.browser.msie && !$('body').width()) {
+                setTimeout(function() {
+                    render();
+                    content.hide().show(); // needed for IE 6
+                    view.rerenderEvents(); // needed for IE 7
+                }, 0);
+            }
+
         });
-	
+
         return this;
-	
+
     };
 
 
@@ -802,7 +855,7 @@
         }else{
             event.className = [];
         }
-    }
+      }
 
 
     /* Grid-based Views: month, basicWeek, basicDay
@@ -814,7 +867,7 @@
 
     views.month = function(element, options) {
         return new Grid(element, options, {
-            render: function(date, delta, fetchEvents) {
+            render: function(date, delta, height, fetchEvents) {
                 if (delta) {
                     addMonths(date, delta);
                     date.setDate(1);
@@ -850,6 +903,7 @@
                     rowCnt, options.weekends ? 7 : 5,
                     this.option('columnFormat'),
                     true,
+                    height,
                     fetchEvents
                     );
             }
@@ -858,7 +912,7 @@
 
     views.basicWeek = function(element, options) {
         return new Grid(element, options, {
-            render: function(date, delta, fetchEvents) {
+            render: function(date, delta, height, fetchEvents) {
                 if (delta) {
                     addDays(date, delta * 7);
                 }
@@ -882,6 +936,7 @@
                     1, options.weekends ? 7 : 5,
                     this.option('columnFormat'),
                     false,
+                    height,
                     fetchEvents
                     );
             }
@@ -890,7 +945,7 @@
 
     views.basicDay = function(element, options) {
         return new Grid(element, options, {
-            render: function(date, delta, fetchEvents) {
+            render: function(date, delta, height, fetchEvents) {
                 if (delta) {
                     addDays(date, delta);
                     if (!options.weekends) {
@@ -900,7 +955,7 @@
                 this.title = formatDate(date, this.option('titleFormat'), options);
                 this.start = this.visStart = cloneDate(date, true);
                 this.end = this.visEnd = addDays(cloneDate(this.start), 1);
-                this.renderGrid(1, 1, this.option('columnFormat'), false, fetchEvents);
+                this.renderGrid(1, 1, this.option('columnFormat'), false, height, fetchEvents);
             }
         });
     }
@@ -912,7 +967,7 @@
 
 
     function Grid(element, options, methods) {
-	
+
         var tm, firstDay,
         nwe,            // no weekends (int)
         rtl, dis, dit,  // day index sign / translate
@@ -920,7 +975,7 @@
         colWidth,
         thead, tbody,
         cachedSegs, //...
-		
+
         // initialize superclass
         view = $.extend(this, viewMethods, methods, {
             renderGrid: renderGrid,
@@ -940,22 +995,22 @@
             }
         });
         view.init(element, options);
-	
-	
-	
+
+
+
         /* Grid Rendering
 	-----------------------------------------------------------------------------*/
-	
-	
+
+
         element.addClass('fc-grid').css('position', 'relative');
         if (element.disableSelection) {
             element.disableSelection();
         }
 
-        function renderGrid(r, c, colFormat, showNumbers, fetchEvents) {
+        function renderGrid(r, c, colFormat, showNumbers, height, fetchEvents) {
             rowCnt = r;
             colCnt = c;
-		
+
             // update option-derived variables
             tm = options.theme ? 'ui' : 'fc';
             nwe = options.weekends ? 0 : 1;
@@ -967,15 +1022,15 @@
                 dis = 1;
                 dit = 0;
             }
-		
+
             var month = view.start.getMonth(),
             today = clearTime(new Date()),
             s, i, j, d = cloneDate(view.visStart);
-		
+
             if (!tbody) { // first time, build all cells from scratch
-		
+
                 var table = $("<table/>").appendTo(element);
-			
+
                 s = "<thead><tr>";
                 for (i=0; i<colCnt; i++) {
                     s += "<th class='fc-" +
@@ -989,7 +1044,7 @@
                     }
                 }
                 thead = $(s + "</tr></thead>").appendTo(table);
-			
+
                 s = "<tbody>";
                 d = cloneDate(view.visStart);
                 for (i=0; i<rowCnt; i++) {
@@ -1014,11 +1069,11 @@
                 }
                 tbody = $(s + "</tbody>").appendTo(table);
                 tbody.find('td').click(dayClick);
-		
+
             }else{ // NOT first time, reuse as many cells as possible
-		
+
                 view.clearEvents();
-		
+
                 var prevRowCnt = tbody.find('tr').length;
                 if (rowCnt < prevRowCnt) {
                     tbody.find('tr:gt(' + (rowCnt-1) + ')').remove(); // remove extra rows
@@ -1045,7 +1100,7 @@
                     tbody.append(s);
                 }
                 tbody.find('td.fc-new').removeClass('fc-new').click(dayClick);
-			
+
                 // re-label and re-class existing cells
                 d = cloneDate(view.visStart);
                 tbody.find('td').each(function() {
@@ -1072,9 +1127,9 @@
                         skipWeekend(d);
                     }
                 });
-			
+
                 if (rowCnt == 1) { // more changes likely (week or day view)
-			
+
                     // redo column header text and class
                     d = cloneDate(view.visStart);
                     thead.find('th').each(function() {
@@ -1085,7 +1140,7 @@
                             skipWeekend(d);
                         }
                     });
-				
+
                     // redo cell day-of-weeks
                     d = cloneDate(view.visStart);
                     tbody.find('td').each(function() {
@@ -1095,17 +1150,17 @@
                             skipWeekend(d);
                         }
                     });
-				
+
                 }
-		
+
             }
-		
-            updateSize();
+
+            updateSize(height);
             fetchEvents(renderEvents);
-	
+
         };
-	
-	
+
+
         function dayClick(ev) {
             var n = parseInt(this.className.match(/fc\-day(\d+)/)[1]),
             date = addDays(
@@ -1114,24 +1169,23 @@
                 );
             view.trigger('dayClick', this, date, true, ev);
         }
-	
-	
-        function updateSize() {
-	
-            var height = Math.round(element.width() / options.aspectRatio),
-            leftTDs = tbody.find('tr td:first-child'),
+
+
+        function updateSize(height) {
+
+            var leftTDs = tbody.find('tr td:first-child'),
             tbodyHeight = height - thead.height(),
             rowHeight1, rowHeight2;
-		
+
             if (options.weekMode == 'variable') {
                 rowHeight1 = rowHeight2 = Math.floor(tbodyHeight / (rowCnt==1 ? 2 : 6));
             }else{
                 rowHeight1 = Math.floor(tbodyHeight / rowCnt);
                 rowHeight2 = tbodyHeight - rowHeight1*(rowCnt-1);
             }
-		
+
             reportTBody(tbody);
-		
+
             if (tdHeightBug == undefined) {
                 // bug in firefox where cell height includes padding
                 var tr = tbody.find('tr:first'),
@@ -1139,7 +1193,7 @@
                 td.height(rowHeight1);
                 tdHeightBug = rowHeight1 != td.height();
             }
-		
+
             if (tdHeightBug) {
                 leftTDs.slice(0, -1).height(rowHeight1);
                 leftTDs.slice(-1).height(rowHeight2);
@@ -1147,26 +1201,26 @@
                 setOuterHeight(leftTDs.slice(0, -1), rowHeight1);
                 setOuterHeight(leftTDs.slice(-1), rowHeight2);
             }
-		
+
             setOuterWidth(
                 thead.find('th').slice(0, -1),
                 colWidth = Math.floor(element.width() / colCnt)
                 );
-		
+
         }
-	
-	
-	
+
+
+
         /* Event Rendering
 	-----------------------------------------------------------------------------*/
-	
-	
+
+
         function renderEvents(events) {
             view.reportEvents(events);
             renderSegs(cachedSegs = compileSegs(events));
         }
-	
-	
+
+
         function rerenderEvents(skipCompile) {
             view.clearEvents();
             if (skipCompile) {
@@ -1175,8 +1229,8 @@
                 renderEvents(view.cachedEvents);
             }
         }
-	
-	
+
+
         function compileSegs(events) {
             var d1 = cloneDate(view.visStart),
             d2 = addDays(cloneDate(d1), colCnt),
@@ -1189,8 +1243,8 @@
             }
             return rows;
         }
-	
-	
+
+
         function renderSegs(segRows) {
             var i, len = segRows.length, levels,
             tr, td,
@@ -1284,6 +1338,7 @@
                                 }
                             }
                             view.reportEventElement(event, eventElement);
+                            view.trigger('eventAfterRender', event, event, eventElement);
                             levelHeight = Math.max(levelHeight, eventElement.outerHeight(true));
                         }
                     }
@@ -1293,13 +1348,13 @@
                 innerDiv.height(rowContentHeight);
             }
         }
-	
-	
-	
+
+
+
         /* Event Dragging
 	-----------------------------------------------------------------------------*/
-	
-	
+
+
         function draggableEvent(event, eventElement) {
             if (!options.disableDragging && eventElement.draggable) {
                 var matrix;
@@ -1351,8 +1406,8 @@
                 });
             }
         }
-	
-	
+
+
     // event resizing w/ 'view' methods...
 
     };
@@ -1373,12 +1428,14 @@
         },
         dragOpacity: {
             agenda: .5
-        }
+        },
+        minTime: 0,
+        maxTime: 24
     });
 
     views.agendaWeek = function(element, options) {
         return new Agenda(element, options, {
-            render: function(date, delta, fetchEvents) {
+            render: function(date, delta, height, fetchEvents) {
                 if (delta) {
                     addDays(date, delta * 7);
                 }
@@ -1398,14 +1455,14 @@
                     this.option('titleFormat'),
                     options
                     );
-                this.renderAgenda(options.weekends ? 7 : 5, this.option('columnFormat'), fetchEvents);
+                this.renderAgenda(options.weekends ? 7 : 5, this.option('columnFormat'), height, fetchEvents);
             }
         });
     };
 
     views.agendaDay = function(element, options) {
         return new Agenda(element, options, {
-            render: function(date, delta, fetchEvents) {
+            render: function(date, delta, height, fetchEvents) {
                 if (delta) {
                     addDays(date, delta);
                     if (!options.weekends) {
@@ -1415,7 +1472,7 @@
                 this.title = formatDate(date, this.option('titleFormat'), options);
                 this.start = this.visStart = cloneDate(date, true);
                 this.end = this.visEnd = addDays(cloneDate(this.start), 1);
-                this.renderAgenda(1, this.option('columnFormat'), fetchEvents);
+                this.renderAgenda(1, this.option('columnFormat'), height, fetchEvents);
             }
         });
     };
@@ -1426,11 +1483,13 @@
         colCnt,
         axisWidth, colWidth, slotHeight,
         cachedDaySegs, cachedSlotSegs,
+        cachedHeight,
         tm, firstDay,
         nwe,            // no weekends (int)
         rtl, dis, dit,  // day index sign / translate
+        minMinute, maxMinute,
         // ...
-		
+
         view = $.extend(this, viewMethods, methods, {
             renderAgenda: renderAgenda,
             renderEvents: renderEvents,
@@ -1461,21 +1520,21 @@
             }
         });
         view.init(element, options);
-	
-	
-	
+
+
+
         /* Time-slot rendering
 	-----------------------------------------------------------------------------*/
-	
-	
+
+
         element.addClass('fc-agenda').css('position', 'relative');
         if (element.disableSelection) {
             element.disableSelection();
         }
-	
-        function renderAgenda(c, colFormat, fetchEvents) {
+
+        function renderAgenda(c, colFormat, height, fetchEvents) {
             colCnt = c;
-		
+
             // update option-derived variables
             tm = options.theme ? 'ui' : 'fc';
             nwe = options.weekends ? 0 : 1;
@@ -1487,17 +1546,19 @@
                 dis = 1;
                 dit = 0;
             }
-		
+            minMinute = parseTime(options.minTime);
+            maxMinute = parseTime(options.maxTime);
+
             var d0 = rtl ? addDays(cloneDate(view.visEnd), -1) : cloneDate(view.visStart),
             d = cloneDate(d0),
             today = clearTime(new Date());
-		
+
             if (!head) { // first time rendering, build from scratch
-		
+
                 var i,
                 minutes,
                 slotNormal = options.slotMinutes % 15 == 0, //...
-			
+
                 // head
                 s = "<div class='fc-agenda-head' style='position:relative;z-index:4'>" +
                 "<table style='width:100%'>" +
@@ -1527,11 +1588,13 @@
                 s+= "</table></div>";
                 head = $(s).appendTo(element);
                 head.find('td').click(slotClick);
-			
+
                 // body
                 d = zeroDate();
+                var maxd = addMinutes(cloneDate(d), maxMinute);
+                addMinutes(d, minMinute);
                 s = "<table>";
-                for (i=0; d.getDate() != 2; i++) {
+                for (i=0; d < maxd; i++) {
                     minutes = d.getMinutes();
                     s += "<tr class='" +
                     (i==0 ? 'fc-first' : (minutes==0 ? '' : 'fc-minor')) +
@@ -1547,14 +1610,14 @@
                     .append(bodyTable = $(s)))
                 .appendTo(element);
                 body.find('td').click(slotClick);
-			
+
                 // background stripes
                 d = cloneDate(d0);
                 s = "<div class='fc-agenda-bg' style='position:absolute;z-index:1'>" +
                 "<table style='width:100%;height:100%'><tr class='fc-first'>";
                 for (i=0; i<colCnt; i++) {
                     s += "<td class='fc-" +
-                    dayIDs[i] + ' ' + // needs to be first
+                    dayIDs[d.getDay()] + ' ' + // needs to be first
                     tm + '-state-default ' +
                     (i==0 ? 'fc-leftmost ' : '') +
                     (+d == +today ? tm + '-state-highlight fc-today' : 'fc-not-today') +
@@ -1566,11 +1629,11 @@
                 }
                 s += "</tr></table></div>";
                 bg = $(s).appendTo(element);
-			
+
             }else{ // skeleton already built, just modify it
-		
+
                 view.clearEvents();
-			
+
                 // redo column header text and class
                 head.find('tr:first th').slice(1, -1).each(function() {
                     $(this).text(formatDate(d, colFormat, options));
@@ -1580,7 +1643,7 @@
                         skipWeekend(d, dis);
                     }
                 });
-			
+
                 // change classes of background stripes
                 d = cloneDate(d0);
                 bg.find('td').each(function() {
@@ -1601,16 +1664,16 @@
                         skipWeekend(d, dis);
                     }
                 });
-		
+
             }
-		
-            updateSize();
+
+            updateSize(height);
             resetScroll();
             fetchEvents(renderEvents);
-		
+
         };
-	
-	
+
+
         function resetScroll() {
             var d0 = zeroDate(),
             scrollDate = cloneDate(d0);
@@ -1625,22 +1688,23 @@
                 go();
             }
         }
-	
-	
-        function updateSize() {
-		
+
+
+        function updateSize(height) {
+            cachedHeight = height;
+
             bodyTable.width('');
-            body.height(Math.round(body.width() / options.aspectRatio) - head.height());
-		
+            body.height(height - head.height());
+
             // need this for IE6/7. triggers clientWidth to be calculated for
             // later user in this function. this is ridiculous
-            //body[0].clientWidth;
-		
+            body[0].clientWidth;
+
             var topTDs = head.find('tr:first th'),
             stripeTDs = bg.find('td'),
             contentWidth = body[0].clientWidth;
             bodyTable.width(contentWidth);
-		
+
             // time-axis width
             axisWidth = 0;
             setOuterWidth(
@@ -1651,27 +1715,27 @@
                 }),
                 axisWidth
                 );
-		
+
             // column width
             colWidth = Math.floor((contentWidth - axisWidth) / colCnt);
             setOuterWidth(stripeTDs.slice(0, -1), colWidth);
             setOuterWidth(topTDs.slice(1, -2), colWidth);
             setOuterWidth(topTDs.slice(-2, -1), contentWidth - axisWidth - colWidth*(colCnt-1));
-		
+
             bg.css({
                 top: head.find('tr').height(),
                 left: axisWidth,
                 width: contentWidth - axisWidth,
-                height: element.height()
+                height: height
             });
-		
+
             slotHeight = body.find('tr:first div').height() + 1;
-		
+
         // TODO:
         //reportTBody(bodyTable.find('tbody'));
         // Opera 9.25 doesn't detect the bug when called from agenda
         }
-	
+
         function slotClick(ev) {
             var col = Math.floor((ev.pageX - bg.offset().left) / colWidth),
             date = addDays(cloneDate(view.visStart), dit + dis*col),
@@ -1680,22 +1744,22 @@
                 var mins = parseInt(rowMatch[1]) * options.slotMinutes,
                 hours = Math.floor(mins/60);
                 date.setHours(hours);
-                date.setMinutes(mins % 60);
+                date.setMinutes(mins%60 + minMinute);
                 view.trigger('dayClick', this, date, false, ev);
             }else{
                 view.trigger('dayClick', this, date, true, ev);
             }
         }
-	
-	
-	
+
+
+
         /* Event Rendering
 	-----------------------------------------------------------------------------*/
-	
-	
+
+
         function renderEvents(events) {
             view.reportEvents(events);
-		
+
             var i, len=events.length,
             dayEvents=[],
             slotEvents=[];
@@ -1706,12 +1770,12 @@
                     slotEvents.push(events[i]);
                 }
             }
-		
+
             renderDaySegs(cachedDaySegs = stackSegs(view.sliceSegs(dayEvents, view.visStart, view.visEnd)));
             renderSlotSegs(cachedSlotSegs = compileSlotSegs(slotEvents));
         }
-	
-	
+
+
         function rerenderEvents(skipCompile) {
             view.clearEvents();
             if (skipCompile) {
@@ -1721,28 +1785,26 @@
                 renderEvents(view.cachedEvents);
             }
         }
-	
-	
+
+
         function compileSlotSegs(events) {
-            var d1 = cloneDate(view.visStart),
-            d2 = addDays(cloneDate(d1), 1),
+            var d = addMinutes(cloneDate(view.visStart), minMinute),
             levels,
             segCols = [],
             i=0;
             for (; i<colCnt; i++) {
-                levels = stackSegs(view.sliceSegs(events, d1, d2));
+                levels = stackSegs(view.sliceSegs(events, d, addMinutes(cloneDate(d), maxMinute-minMinute)));
                 countForwardSegs(levels);
                 segCols.push(levels);
-                addDays(d1, 1);
-                addDays(d2, 1);
+                addDays(d, 1, true);
             }
             return segCols;
         }
-	
-	
-	
+
+
+
         // renders 'all-day' events at the top
-	
+
         function renderDaySegs(segRow) {
             if (options.allDaySlot) {
                 var td = head.find('td'),
@@ -1820,6 +1882,7 @@
                                 }
                             }
                             view.reportEventElement(event, eventElement);
+                            view.trigger('eventAfterRender', event, event, eventElement);
                             levelHeight = Math.max(levelHeight, eventElement.outerHeight(true));
                         }
                     }
@@ -1827,14 +1890,14 @@
                     rowContentHeight += levelHeight;
                 }
                 tdInner.height(rowContentHeight);
-                updateSize(); // tdInner might have pushed the body down, so resize
+                updateSize(cachedHeight); // tdInner might have pushed the body down, so resize
             }
         }
-	
-	
-	
+
+
+
         // renders events in the 'time slots' at the bottom
-	
+
         function renderSlotSegs(segCols) {
             var colI, colLen=segCols.length, col,
             levelI, level,
@@ -1859,6 +1922,7 @@
                         bottom = timePosition(seg.start, seg.end);
                         tdInner = bg.find('td:eq(' + (colI*dis + dit) + ') div div');
                         availWidth = tdInner.width();
+                        availWidth = Math.min(availWidth-6, availWidth*.95); // TODO: move this to CSS
                         if (levelI) {
                             // indented and thin
                             width = availWidth / (levelI + forward + 1);
@@ -1868,7 +1932,7 @@
                                 width = ((availWidth / (forward + 1)) - (12/2)) * 2; // 12 is the predicted width of resizer =
                             }else{
                                 // can be entire width, aligned left
-                                width = availWidth * .96;
+                                width = availWidth;
                             }
                         }
                         left = axisWidth + tdInner.position().left +       // leftmost possible
@@ -1919,21 +1983,22 @@
                             }
                         }
                         view.reportEventElement(event, eventElement);
+                        view.trigger('eventAfterRender', event, event, eventElement);
                     }
                 }
             }
         }
 
-	
-	
-	
+
+
+
         /* Event Dragging
 	-----------------------------------------------------------------------------*/
-	
-	
-	
+
+
+
         // when event starts out FULL-DAY
-	
+
         function draggableDayEvent(event, eventElement, isStart) {
             if (!options.disableDragging && eventElement.draggable) {
                 var origPosition, origWidth,
@@ -2015,6 +2080,7 @@
                                 allDay ? 0 : // minute delta
                                 Math.round((eventElement.offset().top - bodyContent.offset().top) / slotHeight)
                                 * options.slotMinutes
+                                + minMinute
                                 - (event.start.getHours() * 60 + event.start.getMinutes()),
                                 allDay, ev, ui
                                 );
@@ -2023,11 +2089,11 @@
                 });
             }
         }
-	
-	
-	
+
+
+
         // when event starts out IN TIMESLOTS
-	
+
         function draggableSlotEvent(event, eventElement, timeElement) {
             if (!options.disableDragging && eventElement.draggable) {
                 var origPosition,
@@ -2132,13 +2198,13 @@
                 });
             }
         }
-	
-	
-	
-	
+
+
+
+
         /* Event Resizing
 	-----------------------------------------------------------------------------*/
-	
+
         // for TIMESLOT events
 
         function resizableSlotEvent(event, eventElement, timeElement) {
@@ -2186,24 +2252,28 @@
                 .find('div.ui-resizable-s').text('=');
             }
         }
-	
-	
+
+
         // ALL-DAY event resizing w/ 'view' methods...
-	
-	
-	
-	
+
+
+
+
         /* Misc
 	-----------------------------------------------------------------------------*/
-	
+
         // get the Y coordinate of the given time on the given day (both Date objects)
-	
-        function timePosition(day, time) {
-            if (time > day && time.getDay() != day.getDay()) {
+
+        function timePosition(day, time) { // both date object. day holds 00:00 of current day
+            day = cloneDate(day, true);
+            if (time < addMinutes(cloneDate(day), minMinute)) {
+                return 0;
+            }
+            if (time >= addMinutes(cloneDate(day), maxMinute)) {
                 return bodyContent.height();
             }
             var slotMinutes = options.slotMinutes,
-            minutes = time.getHours()*60 + time.getMinutes(),
+            minutes = time.getHours()*60 + time.getMinutes() - minMinute,
             slotI = Math.floor(minutes / slotMinutes),
             tr = body.find('tr:eq(' + slotI + ')'),
             td = tr.find('td'),
@@ -2261,8 +2331,8 @@
 	 * 9 - dragging/resizing events
 	 *
 	 */
-	
-	
+
+
 
         init: function(element, options) {
             this.element = element;
@@ -2272,29 +2342,29 @@
             this.eventElements = [];
             this.eventElementsByID = {};
         },
-	
-	
-	
+
+
+
         // triggers an event handler, always append view as last arg
-	
+
         trigger: function(name, thisObj) {
             if (this.options[name]) {
                 return this.options[name].apply(thisObj || this, Array.prototype.slice.call(arguments, 2).concat([this]));
             }
         },
-	
-	
-	
+
+
+
         // returns a Date object for an event's end
-	
+
         eventEnd: function(event) {
             return event.end ? cloneDate(event.end) : this.defaultEventEnd(event); // TODO: make sure always using copies
         },
-	
-	
-	
+
+
+
         // report when view receives new events
-	
+
         reportEvents: function(events) { // events are already normalized at this point
             var i, len=events.length, event,
             eventsByID = this.eventsByID = {},
@@ -2309,9 +2379,9 @@
                 cachedEvents.push(event);
             }
         },
-	
-	
-	
+
+
+
         // report when view creates an element for an event
 
         reportEventElement: function(event, element) {
@@ -2323,11 +2393,11 @@
                 eventElementsByID[event._id] = [element];
             }
         },
-	
-	
-	
+
+
+
         // event element manipulation
-	
+
         clearEvents: function() { // only remove ELEMENTS
             $.each(this.eventElements, function() {
                 this.remove();
@@ -2335,15 +2405,15 @@
             this.eventElements = [];
             this.eventElementsByID = {};
         },
-	
+
         showEvents: function(event, exceptElement) {
             this._eee(event, exceptElement, 'show');
         },
-	
+
         hideEvents: function(event, exceptElement) {
             this._eee(event, exceptElement, 'hide');
         },
-	
+
         _eee: function(event, exceptElement, funcName) { // event-element-each
             var elements = this.eventElementsByID[event._id],
             i, len = elements.length;
@@ -2353,11 +2423,11 @@
                 }
             }
         },
-	
-	
-	
+
+
+
         // event modification reporting
-	
+
         eventDrop: function(e, event, dayDelta, minuteDelta, allDay, ev, ui) {
             var view = this,
             oldAllDay = event.allDay;
@@ -2370,7 +2440,7 @@
             view.eventsChanged = true;
             view.rerenderEvents();
         },
-	
+
         eventResize: function(e, event, dayDelta, minuteDelta, ev, ui) {
             var view = this;
             view.elongateEvents(view.eventsByID[event._id], dayDelta, minuteDelta);
@@ -2382,11 +2452,11 @@
             view.eventsChanged = true;
             view.rerenderEvents();
         },
-	
-	
-	
+
+
+
         // event modification
-	
+
         moveEvents: function(events, dayDelta, minuteDelta, allDay) {
             minuteDelta = minuteDelta || 0;
             for (var e, len=events.length, i=0; i<len; i++) {
@@ -2401,7 +2471,7 @@
                 normalizeEvent(e, this.options);
             }
         },
-	
+
         elongateEvents: function(events, dayDelta, minuteDelta) {
             minuteDelta = minuteDelta || 0;
             for (var e, len=events.length, i=0; i<len; i++) {
@@ -2410,11 +2480,11 @@
                 normalizeEvent(e, this.options);
             }
         },
-	
-	
-	
+
+
+
         // semi-transparent overlay (while dragging)
-	
+
         showOverlay: function(props) {
             if (!this.dayOverlay) {
                 this.dayOverlay = $("<div class='fc-cell-overlay' style='position:absolute;z-index:3;display:none'/>")
@@ -2430,15 +2500,15 @@
             })
             .show();
         },
-	
+
         hideOverlay: function() {
             if (this.dayOverlay) {
                 this.dayOverlay.hide();
             }
         },
-	
-	
-	
+
+
+
         // common horizontal event resizing
 
         resizableDayEvent: function(event, eventElement, colWidth) {
@@ -2469,11 +2539,11 @@
                 });
             }
         },
-	
-	
-	
+
+
+
         // attaches eventClick, eventMouseover, eventMouseout
-	
+
         eventElementHandlers: function(event, eventElement) {
             var view = this;
             eventElement
@@ -2492,25 +2562,23 @@
                 }
                 );
         },
-	
-	
-	
+
+
+
         // get a property from the 'options' object, using smart view naming
-	
+
         option: function(name, viewName) {
-            
             var v = this.options[name];
-           
             if (typeof v == 'object') {
                 return smartProperty(v, viewName || this.name);
             }
             return v;
         },
-	
-	
-	
+
+
+
         // event rendering utilities
-	
+
         sliceSegs: function(events, start, end) {
             var segs = [],
             i, len=events.length, event,
@@ -2548,7 +2616,7 @@
             }
             return segs.sort(segCmp);
         }
-	
+
 
     };
 
@@ -2707,7 +2775,7 @@
 
     var parseISO8601 = fc.parseISO8601 = function(s, ignoreTimezone) {
         // derived from http://delete.me.uk/2005/03/iso8601.html
-        var d = s.match(/^([0-9]{4})(-([0-9]{2})(-([0-9]{2})(T([0-9]{2}):([0-9]{2})(:([0-9]{2})(\.([0-9]+))?)?(Z|(([-+])([0-9]{2}):([0-9]{2})))?)?)?)?$/);
+        var d = s.match(/^([0-9]{4})(-([0-9]{2})(-([0-9]{2})([T ]([0-9]{2}):([0-9]{2})(:([0-9]{2})(\.([0-9]+))?)?(Z|(([-+])([0-9]{2}):([0-9]{2})))?)?)?)?$/);
         if (!d) return null;
         var offset = 0;
         var date = new Date(d[1], 0, 1);
@@ -2738,6 +2806,26 @@
         }
         return new Date(Number(date) + (offset * 60 * 1000));
     }
+
+    var parseTime = fc.parseTime = function(s) { // returns minutes since start of day
+        if (typeof s == 'number') { // an hour
+            return s * 60;
+        }
+        if (typeof s == 'object') { // a Date object
+            return s.getHours() * 60 + s.getMinutes();
+        }
+        var m = s.match(/(\d+)(?::(\d+))?\s*(\w+)?/);
+        if (m) {
+            var h = parseInt(m[1]);
+            if (m[3]) {
+                h %= 12;
+                if (m[3].toLowerCase().charAt(0) == 'p') {
+                    h += 12;
+                }
+            }
+            return h * 60 + (m[2] ? parseInt(m[2]) : 0);
+        }
+    };
 
 
 
@@ -2910,35 +2998,39 @@
     function setOuterWidth(element, width, includeMargins) {
         element.each(function() {
             var e = $(this);
-            var w = width - (
-                (parseInt(e.css('border-left-width')) || 0) +
-                (parseInt(e.css('padding-left')) || 0) +
-                (parseInt(e.css('padding-right')) || 0) +
-                (parseInt(e.css('border-right-width')) || 0));
+            var w = width - horizontalSides(e);
             if (includeMargins) {
-                w -=
-                (parseInt(e.css('margin-left')) || 0) +
+                w -= (parseInt(e.css('margin-left')) || 0) +
                 (parseInt(e.css('margin-right')) || 0);
             }
             e.width(w);
         });
     }
 
+    function horizontalSides(e) {
+        return (parseInt(e.css('border-left-width')) || 0) +
+        (parseInt(e.css('padding-left')) || 0) +
+        (parseInt(e.css('padding-right')) || 0) +
+        (parseInt(e.css('border-right-width')) || 0);
+    }
+
     function setOuterHeight(element, height, includeMargins) {
         element.each(function() {
             var e = $(this);
-            var h = height - (
-                (parseInt(e.css('border-top-width')) || 0) +
-                (parseInt(e.css('padding-top')) || 0) +
-                (parseInt(e.css('padding-bottom')) || 0) +
-                (parseInt(e.css('border-bottom-width')) || 0));
+            var h = height - verticalSides(e);
             if (includeMargins) {
-                h -=
-                (parseInt(e.css('margin-top')) || 0) +
+                h -= (parseInt(e.css('margin-top')) || 0) +
                 (parseInt(e.css('margin-bottom')) || 0);
             }
             e.height(h);
         });
+    }
+
+    function verticalSides(e) {
+        return (parseInt(e.css('border-top-width')) || 0) +
+        (parseInt(e.css('padding-top')) || 0) +
+        (parseInt(e.css('padding-bottom')) || 0) +
+        (parseInt(e.css('border-bottom-width')) || 0);
     }
 
 
@@ -2975,14 +3067,14 @@
         prevRowE, prevColE,
         origRow, origCol,
         currRow, currCol;
-	
+
         this.row = function(e, topBug) {
             prevRowE = $(e);
             tops.push(prevRowE.offset().top + (
                 (operaPositionBug && prevRowE.is('tr')) ? prevRowE.parent().position().top : 0
                 ));
         };
-	
+
         this.col = function(e) {
             prevColE = $(e);
             lefts.push(prevColE.offset().left);

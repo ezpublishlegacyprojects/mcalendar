@@ -1,22 +1,11 @@
 <?php
-//
-// Definition of eZiCalExtendedFilter class
 
-
-
-/*! \file eZiCalExtendedFilter.php
-*/
-
-/*!
-  \class eZiCalExtendedFilter eZiCalExtendedFilter.php
-  \brief
-*/
 class calendarExtendedFilter {
 
     function CreateSqlParts( $params ) {
         $result = array( 'tables' => '', 'joins'  => '', 'columns' => '' );
 
-        /* Paramètres */
+      
         if ( !isset($params['from_time']) || !isset($params['to_time'])) {
             return $result;
         }
@@ -27,7 +16,6 @@ class calendarExtendedFilter {
         $CalendarRaw = Calendar::instance();
 
 
-        /* Attribut */
         $attributeBeginDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTSTART'];
         $attributeEndDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTEND'];
         $attributeFrequency = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['Frequency'];
@@ -37,9 +25,7 @@ class calendarExtendedFilter {
         $attributeEndDateID = eZContentObjectTreeNode::classAttributeIDByIdentifier($attributeEndDate);
         $attributeFrequencyID = eZContentObjectTreeNode::classAttributeIDByIdentifier($attributeFrequency);
         $attributeFrequencyEndID = eZContentObjectTreeNode::classAttributeIDByIdentifier($attributeFrequencyEnd);
-
-
-        /* Requêtes SQL */
+     
         $arrayJoins = array();
         $arrayTables = array();
         $arrayCondition = array();

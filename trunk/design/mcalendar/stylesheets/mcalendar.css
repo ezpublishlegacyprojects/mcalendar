@@ -76,3 +76,33 @@ ul.formatted li {
 ol.formatted li {
 	list-style-type: decimal;
 }
+
+div#calendar_legend{
+    width:90%;
+    margin-top:2em;
+}
+div#calendar_legend div.legend_box{}
+div#calendar_legend div.calendar_element{
+    padding-bottom:1em;
+    height:auto;
+    overflow:hidden;
+}
+
+div#calendar_legend div.calendar_element input{
+    float:right;
+    clear:right;
+    position:relative;
+    top:1em;
+    right:0.5em;
+}
+div#calendar_legend div.calendar_element span{
+    float:left;
+    display:block;
+    font-size:1em;
+    padding:0.3em;
+    width:60%;
+    position:relative;
+    left:0.5em;
+    top:0.5em;
+    background:white;
+}

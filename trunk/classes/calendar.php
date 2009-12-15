@@ -37,7 +37,6 @@ class Calendar {
 *method
 ******************************************/
     private function __construct() {
-        /* Récupération des paramètres */
         $ini = eZINI::instance('calendar.ini');
         $this->eventClass = $ini->variableMulti('EventClass', array(
             'EventClassID'   => 'EventClassID',

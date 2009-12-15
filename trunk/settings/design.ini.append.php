@@ -4,6 +4,5 @@
 [ExtensionSettings]
 DesignExtensions[]=mcalendar
 
-[JavaScriptSettings]
-JavaScriptList[]=ezjsc::jquery
+
 */ ?>

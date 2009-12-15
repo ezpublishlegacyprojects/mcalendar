@@ -5,7 +5,7 @@
  * @author mosarg@gmail.com
  ***********************************************************************************/
 
-class calendarAjaxCalls {
+class mcServerFunctions extends ezjscServerFunctions {
 
 
 /************************************************************
@@ -15,10 +15,14 @@ class calendarAjaxCalls {
 *************************************************************/
     public static function removeEvent($args) {
         $nodeID=$args[0];
+        $calendarID=$args[1];
+        $start=$args[2];
+        $end=$args[3];
         $node = eZContentObjectTreeNode::fetch( $nodeID );
         if(is_object($node)) {
             if($node->canRemove()):
                 $node->removeNodeFromTree(false);
+                calendarCache::expireCache($start,$end,$calendarID);
             else:
                 return 'You are not allowed to remove this node';
             endif;
@@ -35,6 +39,9 @@ class calendarAjaxCalls {
 
     public static function updateEventAjax($args) {
         $objectId=$args[0];
+        $calendarId=$args[3];
+        $start=$args[4];
+        $end=$args[5];
         $arguments=json_decode($_POST['postdata'],true);
         $event=eZContentObject::fetch($objectId);
         if($event->canEdit()) {
@@ -61,11 +68,11 @@ class calendarAjaxCalls {
         else {
             return 'You are not allowed to edit this event';
         }
+
+        calendarCache::expireCache($start,$end,$calendarId);
         return 'Edit success';
 
     }
-
-
 
 /***************************************************************
 *
@@ -76,9 +83,10 @@ class calendarAjaxCalls {
 
     public static function updateEventTimeSlot($args) {
         $objectId=$args[0];
+        $calendarId=$args[3];
         $event=eZContentObject::fetch($objectId);
         if($event->canEdit()) {
-          $mod_attributes=array('to_time'=>array('data_int',(int)$args[2]),
+            $mod_attributes=array('to_time'=>array('data_int',(int)$args[2]),
                 'from_time'=>array('data_int',(int)$args[1]));
 
             $datamap=$event->attribute('data_map');
@@ -92,6 +100,7 @@ class calendarAjaxCalls {
         else {
             return 'You are not allowed to edit this event';
         }
+        calendarCache::expireCache($args[1],$args[2],$calendarId);
         return 'Edit success';
 
     }
@@ -105,6 +114,8 @@ class calendarAjaxCalls {
         $parentNodeId=$args[0];
         $fromTime=$args[1];
         $toTime=$args[2];
+        $start=$args[3];
+        $end=$args[4];
         $arguments=json_decode($_POST['postdata'],true);
         $xmlText='<?xml version="1.0" encoding="utf-8"?>
                 <section xmlns:image="http://ez.no/namespaces/ezpublish3/image/"
@@ -125,6 +136,8 @@ class calendarAjaxCalls {
             'nodeId'=>(int)($newObject->attribute( 'main_node_id' )),'parentNodeId'=>(int)$parentNodeId,
             'urlAlias'=>$node->urlAlias(),'currentLanguage'=>$newObject->currentLanguage(),
             'objectId'=>$newObject->ID,'frequency'=>0,'isMain'=>true);
+        
+        calendarCache::expireCache($start,$end,$parentNodeId);
         return $data;
     }
 
@@ -140,8 +153,23 @@ class calendarAjaxCalls {
         $fromTime=(int)$args[1];
         $toTime=(int)$args[2];
         $view=$args[3];
-        return calendarFetchFunctions::fetchEventsAjax($parentNodeId,$fromTime,$toTime,$view);
 
+
+        if (calendarCache::isCached($fromTime,$toTime,$parentNodeId)) {
+            $cal_events=calendarCache::getCache($fromTime,$toTime,$parentNodeId);
+        }
+        else {
+            $cal_events=calendarFetchFunctions::fetchEventsAjax($parentNodeId,$fromTime,$toTime,$view);
+            calendarCache::storeCache($fromTime,$toTime,$parentNodeId,$cal_events);
+        }
+        return $cal_events;
+
+    }
+    /**
+     * Reimp
+     */
+    public static function getCacheTime( $functionName ) {
+        return time();
     }
 
 

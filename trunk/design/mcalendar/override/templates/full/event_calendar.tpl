@@ -6,7 +6,7 @@
 {scuolapagedata_set( 'left_nav_menu', true() )}
 {scuolapagedata_set( 'extra_menu', false() )}
 {run-once}
-{ezcss_require(array('fullcalendar.css','mcalendar.css'))}
+{ezcss_require(array('fullcalendar.css','mcalendar.css','dialog.css'))}
 {ezscript_require( array( concat( 'ezjsc::', 'jqueryio' ),
         'classes/jquery-ui-min.js','classes/fullcalendar.js',
         'fcalendar.js','classes/dialogs.js' ))}
@@ -28,26 +28,29 @@
             <form>
                 <input type="hidden" />
                 <ul>
-                    <li>
-                        <span>Date: </span><span class="date_holder"></span>
+                   <li>
+                        <label for="calendar">Scegli il calendario: </label>
+                        <select name="calendar">
+
+                        </select>
                     </li>
-                    <li>
-                        <label for="start">Start Time: </label>
+                   <li>
+                        <label for="start">Ora inizio: </label>
                         <select name="start">
 
                         </select>
                     </li>
                     <li>
-                        <label for="end">End Time: </label>
+                        <label for="end">Ora fine: </label>
                         <select name="end">
 
                         </select>
                     </li>
                     <li>
-                        <label for="title">Title: </label><input type="text" name="title" />
+                        <label for="title">Titolo: </label><input type="text" name="title" />
                     </li>
                     <li>
-                        <label for="body">Body: </label><textarea name="body"></textarea>
+                        <label for="body">Testo: </label><textarea name="body"></textarea>
                     </li>
                 </ul>
             </form>
@@ -58,7 +61,8 @@
             <p title="node_id">{$node.node_id}</p>
             <p title="event_color">{$node.data_map.color.content}</p>
             <p title="calendar_type">{$node.data_map.view.class_content.options[$node.data_map.view.value[0]].name|downcase()}</p>
-            <p title="can_edit">{$node.can_edit}</p>
+            <p title="can_edit">{fetch( 'content', 'can_instantiate_classes',hash('parent_node',$node))}</p>
+            <p title="calendars_list">[{hash('calendar_id',$node.node_id,'calendar_name',$node.name,'event_color',$node.data_map.color.content)|json_encode()}]</p>
         </div>
     </div>
 </div>

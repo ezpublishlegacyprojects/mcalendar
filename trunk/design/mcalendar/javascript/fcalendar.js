@@ -1,4 +1,7 @@
 $(document).ready(function() {
+
+    var calendars_list=$('#tools_container p[title="calendars_list"]').text();
+    var calendars_list_data=eval('('+calendars_list+')');
     var defView,buttons;
     var actionUrl =$('p[title="action"]').text();
     var editIcon=$('p[title="editIcon"]').text();
@@ -39,7 +42,8 @@ switch(calendarType){
         },
         editable: canEdit,
         events: function(start, end, callback) {
-            $.ez('mcalendar::fetchEvents::'+nodeId+'::'+Math.round(start.getTime()/1000)+'::'+Math.round(end.getTime()/1000)+'::ajaxweek',function(data) {
+           var action= 'mcalendar::fetchEvents::'+nodeId+'::'+Math.round(start.getTime()/1000)+'::'+Math.round(end.getTime()/1000)+'::ajaxweek';
+            $.ez(action,{postdata:'ready'},function(data) {
                 callback(data.content);
             });
         },
@@ -48,22 +52,22 @@ switch(calendarType){
             var start=Math.round(event.start.getTime()/1000),
                 end=Math.round(event.end.getTime()/1000);
 
-            ezaction='mcalendar::updateEventTimeSlot::'+event.objectId+'::'+start+'::'+end;
-            $.ez(ezaction);
+            ezaction='mcalendar::updateEventTimeSlot::'+event.objectId+'::'+start+'::'+end+'::'+event.parentNodeId;
+            $.ez(ezaction,{postdata:'ready'});
         },
         eventDrop: function(event, delta) {
             var ezaction;
             var start=Math.round(event.start.getTime()/1000),
                 end=Math.round(event.end.getTime()/1000);
-  
-            ezaction='mcalendar::updateEventTimeSlot::'+event.objectId+'::'+start+'::'+end;
-            $.ez(ezaction);
+                ezaction='mcalendar::updateEventTimeSlot::'+event.objectId+'::'+start+'::'+end+'::'+event.parentNodeId;
+            $.ez(ezaction,{postdata:'ready'});
         },
         loading: function(bool) {
             if (bool) $('#loading').show();
             else $('#loading').hide();
-        },
+          },
         dayClick: function(dayDate, allDay, jsEvent, view){
+
             if(!canEdit)return false;
             var timestamp=dayDate.getTime()/1000;
             var calEvent={
@@ -78,24 +82,22 @@ switch(calendarType){
             var $dialogContent = $("#event_edit_container");
             var dialogParams={
                 calendar:$calendar,
-                node_id:nodeId,
+                list:calendars_list_data,
                 calevent:calEvent,
                 timeslottimes:$calendar.fullCalendar("getTimeslotTimes", calEvent.start)
             }
-          
             $dialogContent.dialog({
                 action:'create',
                 params:dialogParams
             }).show();
-         
-        },
+         },
         eventClick:function(calEvent, jsEvent, view){
             if(!canEdit)return false;
             if ($(jsEvent.target).hasClass('editbutton')) return true;
             var $dialogContent = $("#event_edit_container");
             var dialogParams={
                 calendar:$calendar,
-                node_id:nodeId,
+                list:calendars_list_data,
                 calevent:calEvent,
                 timeslottimes:$calendar.fullCalendar("getTimeslotTimes", calEvent.start)
             }
