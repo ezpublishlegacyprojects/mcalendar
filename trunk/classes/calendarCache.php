@@ -98,7 +98,7 @@ class calendarCache {
         }
 
         foreach($toExpire as $expireFile) {
-            eZFileHandler::unlink($expireFile);
+            if (file_exists($expireFile)) eZFileHandler::unlink($expireFile);
             
         }
 

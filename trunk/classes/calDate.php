@@ -11,7 +11,6 @@
  */
 class calDate extends eZDate {
 
-   
 
     /*
      * Day of week ISO-8601 numeric representation of the day of the week (added in PHP 5.1.0)

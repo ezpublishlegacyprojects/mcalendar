@@ -17,7 +17,7 @@ class calendarContentObject {
     }
 
     function view($events,$view='month') {
-        $CalendarRaw = Calendar::instance();
+            $CalendarRaw = Calendar::instance();
         foreach ( $events as $event ) {
             $eventdataMap = $event->dataMap();
             $eventFromTimeDate = new calDate( $eventdataMap['from_time']->content()->attribute('timestamp') );
