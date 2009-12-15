@@ -1,52 +1,32 @@
 $(document).ready(function() {
-    var defView,buttons;
+
+    var calendars_list=$('#config p[title="calendars_list"]').text();
+    var calendars_list_data=eval('('+calendars_list+')');
     var actionUrl =$('p[title="action"]').text();
     var editIcon=$('p[title="editIcon"]').text();
-    var nodeId=$('p[title="node_id"]').text();
-    var calendarType=$('p[title="calendar_type"]').text();
+    var eventColors=new Object();
+
+    var $calendarLegend=$('#calendar_legend');
     var $calendar = $('#calendar');
     var canEdit=$('p[title="can_edit"]').text();
-    var eventColor=$('p[title="event_color"]').text();
-    
- 
-switch(calendarType){
-    case 'vista_settimana':
-        defView='agendaWeek';
-        buttons='agendaWeek';
-        break;
-    case 'vista_mese':
-        defView='month';
-        buttons='month';
-        break;
-    case 'vista_multipla':
-        defView='month';
-        buttons='month,agendaWeek,agendaDay';
-        break;
-    case 'programma':
-        defView='agendaDay';
-        buttons='agendaDay';
-        break;
-}
+
+
     $calendar.fullCalendar({
-        defaultView: defView,
+        defaultView: 'month',
         firstHour:7,
         timeslotsPerDay:30,
         allDayDefault:false,
         header: {
             left: 'prev,next today',
             center: 'title',
-            right: buttons
+            right: 'month,agendaWeek,agendaDay'
         },
         editable: canEdit,
-        events: function(start, end, callback) {
-            $.ez('mcalendar::fetchEvents::'+nodeId+'::'+Math.round(start.getTime()/1000)+'::'+Math.round(end.getTime()/1000)+'::ajaxweek',function(data) {
-                callback(data.content);
-            });
-        },
+        eventSources:createCalendarsFetchList(calendars_list_data),
         eventResize:function(event, dayDelta, minuteDelta, revertFunc, jsEvent, ui, view){
             var ezaction;
             var start=Math.round(event.start.getTime()/1000),
-                end=Math.round(event.end.getTime()/1000);
+            end=Math.round(event.end.getTime()/1000);
 
             ezaction='mcalendar::updateEventTimeSlot::'+event.objectId+'::'+start+'::'+end;
             $.ez(ezaction);
@@ -54,16 +34,24 @@ switch(calendarType){
         eventDrop: function(event, delta) {
             var ezaction;
             var start=Math.round(event.start.getTime()/1000),
-                end=Math.round(event.end.getTime()/1000);
-  
+            end=Math.round(event.end.getTime()/1000);
             ezaction='mcalendar::updateEventTimeSlot::'+event.objectId+'::'+start+'::'+end;
             $.ez(ezaction);
         },
         loading: function(bool) {
             if (bool) $('#loading').show();
-            else $('#loading').hide();
+            else {$('#loading').hide();
+
+            alert($calendar.fullCalendar('option1','title'));
+            $calendarLegend.legend({list:calendars_list_data,
+                                   calendar:$calendar});}
+            
+            
+
         },
         dayClick: function(dayDate, allDay, jsEvent, view){
+   
+
             if(!canEdit)return false;
             var timestamp=dayDate.getTime()/1000;
             var calEvent={
@@ -78,16 +66,16 @@ switch(calendarType){
             var $dialogContent = $("#event_edit_container");
             var dialogParams={
                 calendar:$calendar,
-                node_id:nodeId,
+                node_id:calendars_list,
                 calevent:calEvent,
                 timeslottimes:$calendar.fullCalendar("getTimeslotTimes", calEvent.start)
             }
-          
+
             $dialogContent.dialog({
                 action:'create',
                 params:dialogParams
             }).show();
-         
+
         },
         eventClick:function(calEvent, jsEvent, view){
             if(!canEdit)return false;
@@ -95,7 +83,7 @@ switch(calendarType){
             var $dialogContent = $("#event_edit_container");
             var dialogParams={
                 calendar:$calendar,
-                node_id:nodeId,
+                node_id:calendars_list,
                 calevent:calEvent,
                 timeslottimes:$calendar.fullCalendar("getTimeslotTimes", calEvent.start)
             }
@@ -106,18 +94,39 @@ switch(calendarType){
         },
 
         eventRender:function(calEvent,$event) {
+         
             if (calEvent.end.getTime() < new Date().getTime()) {
-                $event.css("background-color", eventColor);
-                $event.find('a').css("background-color", eventColor);
+                $event.css("background-color", eventColors[calEvent.parentNodeId]);
+                $event.find('a').css("background-color", eventColors[calEvent.parentNodeId]);
             }
-            $event.css("background-color", eventColor);
+            $event.css("background-color", eventColors[calEvent.parentNodeId]);
             $event.append('<div class="info"> isMain '+calEvent.isMain+' Freq:'+calEvent.frequency+'</div>');
             $event.append(renderToolbar(calEvent))  ;
 
         }
 
     });
- 
+
+
+
+
+    function createCalendarsFetchList( calendars) {
+        var calendarsFetches=new Array();
+             function createFetchFunction(calendar_id,color){
+              return function(start, end, callback){
+               eventColors[calendar_id]=color;
+               $.ez('mcalendar::fetchEvents::'+calendar_id+'::'+Math.round(start.getTime()/1000)+'::'+Math.round(end.getTime()/1000)+'::ajaxweek',function(data) {
+                    callback(data.content);
+                });
+            }
+        }
+        for ( var i in calendars) {
+            calendarsFetches.push(createFetchFunction(calendars[i].calendar_id,calendars[i].event_color));
+        }
+        return calendarsFetches;
+    }
+
+
     function renderToolbar(calEvent)
     {
         var tools='<div id="tools"> <form action='+actionUrl+' method="post">';

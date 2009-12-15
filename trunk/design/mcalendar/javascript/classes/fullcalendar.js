@@ -437,6 +437,15 @@
                         return formatDate(date, options.timeFormat.agenda,options);
                   
                 },
+                option1: function(name) {
+
+                          var v = options[name];
+
+                         if (typeof v == 'object') {
+                             return smartProperty(v, viewName || this.name);
+                        }
+                        return v;
+                    },
                 getTimeslotTimes : function(date) {
                   
                     var firstHourDisplayed = options.firstHour;
@@ -2489,7 +2498,9 @@
         // get a property from the 'options' object, using smart view naming
 	
         option: function(name, viewName) {
+            
             var v = this.options[name];
+           
             if (typeof v == 'object') {
                 return smartProperty(v, viewName || this.name);
             }

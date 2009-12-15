@@ -1,28 +1,29 @@
-{* Event Calendar - Full view *}
-
-<!--load jquery-->
-
+{* Multicalendar - Full view *}
 {scuolapagedata_set( 'left_menu', true() )}
 {scuolapagedata_set( 'left_nav_menu', true() )}
 {scuolapagedata_set( 'extra_menu', false() )}
+{def $related_node=''}
+
 {run-once}
 {ezcss_require(array('fullcalendar.css','mcalendar.css'))}
 {ezscript_require( array( concat( 'ezjsc::', 'jqueryio' ),
         'classes/jquery-ui-min.js','classes/fullcalendar.js',
-        'fcalendar.js','classes/dialogs.js' ))}
+        'init_multicalendar.js','classes/dialogs.js','classes/calendar_legend.js' ))}
 {/run-once}
 
 
 
-{if $node.object.state_id_array|contains('6')}
+
+    {if $node.object.state_id_array|contains('6')}
         <div class="wip rounded shadowmore">
             <p>{"Contenuto in preparazione non ancora visibile pubblicamente"|i18n('scuola/state')}</p>
         </div>
-        {/if}
-
-
-    <div class="border-box">
-    <div class="content-view-full">
+    {/if}
+    
+      
+<div class="border-box">
+     <div class="content-view-full">
+         <div id="calendar_legend"></div>
         <div id="calendar"></div>
         <div id="event_edit_container">
             <form>
@@ -52,15 +53,13 @@
                 </ul>
             </form>
         </div>
-        <div id="tools_container" style="visibility:hidden">
+        <div id="config" style="visibility:hidden">
             <p title="action">{"/content/action"|ezurl}</p>
             <p title="editIcon">{"icons/pencil_small.png"|ezimage}</p>
             <p title="node_id">{$node.node_id}</p>
-            <p title="event_color">{$node.data_map.color.content}</p>
-            <p title="calendar_type">{$node.data_map.view.class_content.options[$node.data_map.view.value[0]].name|downcase()}</p>
             <p title="can_edit">{$node.can_edit}</p>
+            <p title="calendars_list">[{foreach $node.data_map.calendars.content.relation_list as $relation}{set $related_node = fetch( 'content', 'node', hash( 'node_id', $relation.node_id ) )} {hash('calendar_id',$relation.node_id,'calendar_name',$related_node.name,'event_color',$related_node.data_map.color.content)|json_encode()},{/foreach}]</p>
         </div>
     </div>
 </div>
-
-
+{undef}

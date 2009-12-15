@@ -24,16 +24,25 @@
             self._setupStartAndEndTimeFields(dialogElements.fieldstart, dialogElements.fieldend, calevent, options.params.timeslottimes);
             
         },
-        close:function(postCloseAction){
+        close:function(event,postCloseAction){
             var self=this;
             var options=self.options;
             var $calendar=options.params.calendar;
             var calevent=options.params.calevent;
             self.element.find('option').remove();
             self.destroy();
-            if(postCloseAction) $calendar.fullCalendar('removeEvents',calevent.id);
+
+            switch(postCloseAction){
+                case 'delete':
+                  $calendar.fullCalendar('removeEvents',calevent.id);
+                break;
+                case 'cancel':
+                    if (options.action=='create') $calendar.fullCalendar('removeEvents',calevent.id);
+                break;
+           }
+
         },
-        "delete" : function(){
+        "delete" : function(event){
             var self=this;
             var options=self.options;
             var $calendar=options.params.calendar;
@@ -41,9 +50,9 @@
             var ezaction='mcalendar::removeEvent::'+calevent.nodeId;
             $.ez(ezaction);
             $calendar.fullCalendar('removeEvents',calevent.id);
-            self.close(true);
+            self.close(event,'delete');
           },
-        save : function(){
+        save : function(event){
             var self=this;
             var ezaction,post_data;
             var options=self.options;
@@ -79,14 +88,14 @@
                     });
                     break;
             }
-            self.close(false);
+            self.close(event,'save');
             $calendar.fullCalendar("updateEvent", calevent);
             
         },
-        cancel : function(){
+        cancel : function(event){
             var self=this;
             var options=self.options;
-            self.close(options.action=='create');
+            self.close(event,'cancel')
         },
         _toTimestamp:function(date){
             return Math.round(date.getTime()/1000);
