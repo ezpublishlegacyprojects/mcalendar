@@ -47,20 +47,6 @@ class Calendar {
             'PathPrefix'     => 'PathPrefix',
             ) );
     }
-/*********************************************************************
-* This method return an instance of the calendar class
-*
-*********************************************************************/
-    static function instance() {
-        $impl = &$GLOBALS["CalendarGlobalInstance"];
-        $class = get_class( $impl );
-
-        if ( $class != 'Calendar') {
-            $impl = new Calendar();
-        }
-        return $impl;
-    }
-
  /*****************************************************************
  *
  * Returns calendar nodeId (int)

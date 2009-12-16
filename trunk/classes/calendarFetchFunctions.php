@@ -17,9 +17,8 @@ class calendarFetchFunctions
 
     public static function fetchEvents( $parent_node_id, $from_time, $to_time,$view,$method='list' )
     {
-        $CalendarRaw = Calendar::instance();
-        $attributeBeginDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTSTART'];
-
+    
+        $attributeBeginDate = 'event/from_time';
         $events = eZFunctionHandler::execute( 'content', 'tree', array(
                 'parent_node_id' => $parent_node_id,
                 'sort_by' => array( 'attribute', true, $attributeBeginDate ),
@@ -46,8 +45,7 @@ class calendarFetchFunctions
 
    public static function multiFetchEvents( $parent_node_ids, $from_time, $to_time,$view,$method='list' )
     {
-        $CalendarRaw = Calendar::instance();
-        $attributeBeginDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTSTART'];
+        $attributeBeginDate = 'event/from_time';
         $events=array();
 
         foreach ($parent_node_ids as $parent_node_id){
@@ -56,7 +54,7 @@ class calendarFetchFunctions
                 'parent_node_id' => $parent_node_id,
                 'sort_by' => array( 'attribute', true, $attributeBeginDate ),
                 'class_filter_type' => 'include',
-                'class_filter_array' => array( $CalendarRaw->eventClass['EventClassID'] ),
+                'class_filter_array' => array( 'event' ),
                 'main_node_only' => true,
                 'extended_attribute_filter' => array( 'id' => 'ScuolaCalendar',
                                                       'params' => array( 'from_time' => $from_time,
@@ -89,9 +87,7 @@ class calendarFetchFunctions
 
     public static function fetchEventsAjax( $parent_node_id, $from_time, $to_time,$view,$method='list' )
     {
-        $CalendarRaw = Calendar::instance();
-        $attributeBeginDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTSTART'];
-
+        $attributeBeginDate = 'event/from_time';
         $events = eZFunctionHandler::execute( 'content', 'tree', array(
                 'parent_node_id' => $parent_node_id,
                 'sort_by' => array( 'attribute', true, $attributeBeginDate ),

@@ -13,13 +13,13 @@ class calendarExtendedFilter {
         $toTime = $params['to_time'];
 
         $db = eZDB::instance();
-        $CalendarRaw = Calendar::instance();
+      
 
 
-        $attributeBeginDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTSTART'];
-        $attributeEndDate = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['DTEND'];
-        $attributeFrequency = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['Frequency'];
-        $attributeFrequencyEnd = $CalendarRaw->eventClass['EventClassID'].'/'.$CalendarRaw->eventClass['Dictionary']['FrequencyEnd'];
+        $attributeBeginDate = 'event/from_time';
+        $attributeEndDate = 'event/to_time';
+        $attributeFrequency = 'event/frequency';
+        $attributeFrequencyEnd = 'event/frequency_end';
 
         $attributeBeginDateID = eZContentObjectTreeNode::classAttributeIDByIdentifier($attributeBeginDate);
         $attributeEndDateID = eZContentObjectTreeNode::classAttributeIDByIdentifier($attributeEndDate);
@@ -51,9 +51,9 @@ class calendarExtendedFilter {
                                AND frequency_end.contentclassattribute_id = $attributeFrequencyEndID
                                AND frequency_end.version = ezcontentobject_name.content_version )";
 
-        $arrayCondition[] = "( frequency.sort_key_string != " . Calendar::FREQUENCY_NONE_ID ."
+        $arrayCondition[] = "( frequency.sort_key_string != " . calendarContentObject::FREQUENCY_NONE_ID ."
                                    AND frequency_end.sort_key_int BETWEEN $fromTime AND $toTime )";
-        $arrayCondition[] = "( frequency.sort_key_string != " . Calendar::FREQUENCY_NONE_ID ."
+        $arrayCondition[] = "( frequency.sort_key_string != " . calendarContentObject::REQUENCY_NONE_ID ."
                                    AND ( frequency_end.sort_key_int = 0 ) )";
 
 

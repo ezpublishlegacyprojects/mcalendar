@@ -2,6 +2,29 @@
 
 
 class calendarContentObject {
+    
+    
+    const VERSION = '0.5';
+    /* Status */
+    const STATUSID_0 = 'TENTATIVE';
+    const STATUSID_1 = 'CONFIRMED';
+    const STATUSID_3 = 'CANCELLED';
+
+    /* Class*/
+    const CLASSID_0 = 'PUBLIC';
+    const CLASSID_1 = 'PRIVATE';
+    const CLASSID_2 = 'CONFIDENTIAL';
+
+    /*Periodicity constants*/
+    const FREQUENCY_NONE_ID = 0;
+    const FREQUENCY_DAILY_OPEN_ID = 1;
+    const FREQUENCY_DAILY_ID = 2;
+    const FREQUENCY_WEEKLY_ID = 3;
+    const FREQUENCY_BIMONTHLY_ID = 4;
+    const FREQUENCY_MONTHLY_ID = 5;
+    const FREQUENCY_ANNUAL_ID = 6;
+
+
 
     public  $calendar;
     private $calendarFromTimeDate;
@@ -17,7 +40,7 @@ class calendarContentObject {
     }
 
     function view($events,$view='month') {
-            $CalendarRaw = Calendar::instance();
+            
         foreach ( $events as $event ) {
             $eventdataMap = $event->dataMap();
             $eventFromTimeDate = new calDate( $eventdataMap['from_time']->content()->attribute('timestamp') );
@@ -49,15 +72,15 @@ class calendarContentObject {
     }
 
     static function hasFrequency ( $event ) {
-        $CalendarRaw = Calendar::instance();
+      
         $dataMap = $event->dataMap();
-        $attributeFrequency = $CalendarRaw->eventClass['Dictionary']['Frequency'];
+        $attributeFrequency='frequency';
         if (isset($dataMap[$attributeFrequency])):
             $frequency = $dataMap[$attributeFrequency]->content();
         else:
             $frequency=array(0);
         endif;
-        if ( strtolower($attributeFrequency) == 'disabled' || $frequency[0] == Calendar::FREQUENCY_NONE_ID ) {
+        if ( strtolower($attributeFrequency) == 'disabled' || $frequency[0] == FREQUENCY_NONE_ID ) {
             return false;
         }
 
@@ -67,12 +90,8 @@ class calendarContentObject {
 
 
     private function addEvent( $event,$timeStamp,$view) {
-        $CalendarRaw = Calendar::instance();
-        $attribute = $CalendarRaw->eventClass['Dictionary']['FullDay'];
+               
         $nature = 'partial';
-        if ( strtolower($attribute) != 'disabled' && $this->dataMap[$attribute]->content() ) {
-            $nature = 'full';
-        }
         switch($view):
             case 'month':
                 $this->calendar[(int)$timeStamp->year()]
@@ -148,10 +167,10 @@ class calendarContentObject {
     }
 
     private function addFrequentEvent( $event, $eventFromTimeDate, $eventToTimeDate,$view) {
-        $CalendarRaw = Calendar::instance();
+        
         $eventdataMap = $event->dataMap();
-        $frequency = $eventdataMap[$CalendarRaw->eventClass['Dictionary']['Frequency']]->content();
-        $frequencyEnd = $eventdataMap[$CalendarRaw->eventClass['Dictionary']['FrequencyEnd']]->content()->attribute('timestamp');
+        $frequency = $eventdataMap['frequency']->content();
+        $frequencyEnd = $eventdataMap['frequency_end']->content()->attribute('timestamp');
         $frequencyEndDate = new calDate( $frequencyEnd );
 
         $cursorDate = new calDate( max($this->calendarFromTimeDate->timeStamp(), $eventFromTimeDate->timeStamp()) );
@@ -166,32 +185,32 @@ class calendarContentObject {
 
         switch ( $frequency[0] ) {
 
-            case Calendar::FREQUENCY_DAILY_OPEN_ID:
+            case FREQUENCY_DAILY_OPEN_ID:
                 $this->addDailyOpenEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
 
 
-            case Calendar::FREQUENCY_DAILY_ID:
+            case FREQUENCY_DAILY_ID:
                 $this->addDailyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view );
                 break;
 
 
-            case Calendar::FREQUENCY_WEEKLY_ID:
+            case FREQUENCY_WEEKLY_ID:
                 $this->addWeeklyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
 
 
-            case Calendar::FREQUENCY_BIMONTHLY_ID:
+            case FREQUENCY_BIMONTHLY_ID:
                 $this->addBiMonthlyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
 
 
-            case Calendar::FREQUENCY_MONTHLY_ID:
+            case FREQUENCY_MONTHLY_ID:
                 $this->addMonthlyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
 
 
-            case Calendar::FREQUENCY_ANNUAL_ID:
+            case FREQUENCY_ANNUAL_ID:
                 $this->addAnnualEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
         }
