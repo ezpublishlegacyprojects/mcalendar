@@ -2,8 +2,7 @@
 
 
 class calendarContentObject {
-    
-    
+   
     const VERSION = '0.5';
     /* Status */
     const STATUSID_0 = 'TENTATIVE';
@@ -23,8 +22,6 @@ class calendarContentObject {
     const FREQUENCY_BIMONTHLY_ID = 4;
     const FREQUENCY_MONTHLY_ID = 5;
     const FREQUENCY_ANNUAL_ID = 6;
-
-
 
     public  $calendar;
     private $calendarFromTimeDate;
@@ -80,17 +77,15 @@ class calendarContentObject {
         else:
             $frequency=array(0);
         endif;
-        if ( strtolower($attributeFrequency) == 'disabled' || $frequency[0] == FREQUENCY_NONE_ID ) {
+        if ( strtolower($attributeFrequency) == 'disabled' || $frequency[0] == self::FREQUENCY_NONE_ID ) {
             return false;
         }
 
         return true;
     }
 
-
-
     private function addEvent( $event,$timeStamp,$view) {
-               
+              
         $nature = 'partial';
         switch($view):
             case 'month':
@@ -136,7 +131,6 @@ class calendarContentObject {
         $this->addEvent($event,$eventFromTimeDate,$view );
         return true;
     }
-
 
     private function addMultiDaysEvent( $event, $eventFromTimeDate, $eventToTimeDate,$view) {
         $cursorDate = new calDate( max($this->calendarFromTimeDate->timeStamp(), $eventFromTimeDate->timeStamp()) );
@@ -185,39 +179,38 @@ class calendarContentObject {
 
         switch ( $frequency[0] ) {
 
-            case FREQUENCY_DAILY_OPEN_ID:
+            case self::FREQUENCY_DAILY_OPEN_ID:
                 $this->addDailyOpenEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
 
 
-            case FREQUENCY_DAILY_ID:
+            case self::FREQUENCY_DAILY_ID:
                 $this->addDailyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view );
                 break;
 
 
-            case FREQUENCY_WEEKLY_ID:
+            case self::FREQUENCY_WEEKLY_ID:
                 $this->addWeeklyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
 
 
-            case FREQUENCY_BIMONTHLY_ID:
+            case self::FREQUENCY_BIMONTHLY_ID:
                 $this->addBiMonthlyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
 
 
-            case FREQUENCY_MONTHLY_ID:
+            case self::FREQUENCY_MONTHLY_ID:
                 $this->addMonthlyEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
 
 
-            case FREQUENCY_ANNUAL_ID:
+            case self::FREQUENCY_ANNUAL_ID:
                 $this->addAnnualEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view);
                 break;
         }
 
         return true;
     }
-
 
     private function addDailyOpenEvent( $event, $cursorDate, $cursorEndDate, $eventToTimeDate,$view) {
         $eventDayOfWeek = date('N', $eventToTimeDate->timeStamp() );

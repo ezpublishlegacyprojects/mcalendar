@@ -53,7 +53,7 @@ class calendarExtendedFilter {
 
         $arrayCondition[] = "( frequency.sort_key_string != " . calendarContentObject::FREQUENCY_NONE_ID ."
                                    AND frequency_end.sort_key_int BETWEEN $fromTime AND $toTime )";
-        $arrayCondition[] = "( frequency.sort_key_string != " . calendarContentObject::REQUENCY_NONE_ID ."
+        $arrayCondition[] = "( frequency.sort_key_string != " . calendarContentObject::FREQUENCY_NONE_ID ."
                                    AND ( frequency_end.sort_key_int = 0 ) )";
 
 
