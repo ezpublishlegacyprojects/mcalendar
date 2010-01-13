@@ -98,7 +98,6 @@ class calendarContentObject {
                 break;
             case 'ajaxweek':
                 $attributes=$event->ContentObject->contentObjectAttributes(false);
-                $out=$event->canEdit();
                 $shortTitle=$attributes[0]->DataText;
                 $textContent=$attributes[2]->DataText;
                 $fromTime=(int)($attributes[4]->DataInt);

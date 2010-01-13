@@ -13,8 +13,6 @@ class calendarExtendedFilter {
         $toTime = $params['to_time'];
 
         $db = eZDB::instance();
-      
-
 
         $attributeBeginDate = 'event/from_time';
         $attributeEndDate = 'event/to_time';
