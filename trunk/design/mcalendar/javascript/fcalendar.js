@@ -10,7 +10,7 @@ $(document).ready(function() {
     var $calendar = $('#calendar');
     var canEdit=$('p[title="can_edit"]').text();
     var eventColor=$('p[title="event_color"]').text();
-    
+  
  
 switch(calendarType){
     case 'vista_settimana':
@@ -19,7 +19,7 @@ switch(calendarType){
         break;
     case 'vista_mese':
         defView='month';
-        buttons='month';
+        buttons='mese';
         break;
     case 'vista_multipla':
         defView='month';
@@ -41,6 +41,20 @@ switch(calendarType){
             right: buttons
         },
         editable: canEdit,
+        monthNames:$('p[title="month_names"]').text().split(","),
+        monthNamesShort:$('p[title="month_names_short"]').text().split(","),
+        dayNames:$('p[title="day_names"]').text().split(","),
+        dayNamesShort:$('p[title="day_names_short"]').text().split(","),
+        buttonText: {
+            prev: '&nbsp;&#9668;&nbsp;',
+            next: '&nbsp;&#9658;&nbsp;',
+            prevYear: '&nbsp;&lt;&lt;&nbsp;',
+            nextYear: '&nbsp;&gt;&gt;&nbsp;',
+            today: 'Oggi',
+            month: 'Mese',
+            week: 'Settimana',
+            day: 'Giorno'
+        },
         events: function(start, end, callback) {
            var action= 'mcalendar::fetchEvents::'+nodeId+'::'+Math.round(start.getTime()/1000)+'::'+Math.round(end.getTime()/1000)+'::ajaxweek';
             $.ez(action,{postdata:'ready'},function(data) {

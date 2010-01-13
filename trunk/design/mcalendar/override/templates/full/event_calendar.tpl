@@ -16,7 +16,7 @@
 
 {if $node.object.state_id_array|contains('6')}
         <div class="wip rounded shadowmore">
-            <p>{"Contenuto in preparazione non ancora visibile pubblicamente"|i18n('scuola/state')}</p>
+            <p>{"Contenuto in preparazione non ancora visibile pubblicamente"|i18n('mcalendar/fullcalendar')}</p>
         </div>
         {/if}
 
@@ -63,6 +63,10 @@
             <p title="calendar_type">{$node.data_map.view.class_content.options[$node.data_map.view.value[0]].name|downcase()}</p>
             <p title="can_edit">{fetch( 'content', 'can_instantiate_classes',hash('parent_node',$node))}</p>
             <p title="calendars_list">[{hash('calendar_id',$node.node_id,'calendar_name',$node.name,'event_color',$node.data_map.color.content)|json_encode()}]</p>
+            <p title="month_names">{"Gennaio,Febbraio,Marzo,Aprile,Maggio,Giugno,Luglio,Agosto,Settembre,Ottobre,Novembre,Dicembre"|i18n('mcalendar/fullcalendar')}</p>
+            <p title="month_names_short">{"Gen,Feb,Mar,Apr,Mag,Giu,Lug,Ago,Set,Ott,Nov,Dic"|i18n('mcalendar/fullcalendar')}</p>
+            <p title="day_names">{"Lunedì,Martedì,Mercoledì,Giovedì,Venerdì,Sabato,Domenica"|i18n('mcalendar/fullcalendar')}</p>
+            <p title="day_names_short">{"Lun,Mar,Mer,Gio,Ven,Sab,Dom"|i18n('mcalendar/fullcalendar')}</p>
         </div>
     </div>
 </div>
