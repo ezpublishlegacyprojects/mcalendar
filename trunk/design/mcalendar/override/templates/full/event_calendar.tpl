@@ -65,8 +65,8 @@
         <p title="calendars_list">[{hash('calendar_id',$node.node_id,'calendar_name',$node.name,'event_color',$node.data_map.color.content)|json_encode()}]</p>
         <p title="month_names">{"Gennaio,Febbraio,Marzo,Aprile,Maggio,Giugno,Luglio,Agosto,Settembre,Ottobre,Novembre,Dicembre"|i18n('mcalendar/fullcalendar')}</p>
         <p title="month_names_short">{"Gen,Feb,Mar,Apr,Mag,Giu,Lug,Ago,Set,Ott,Nov,Dic"|i18n('mcalendar/fullcalendar')}</p>
-        <p title="day_names">{"Lunedì,Martedì,Mercoledì,Giovedì,Venerdì,Sabato,Domenica"|i18n('mcalendar/fullcalendar')}</p>
-        <p title="day_names_short">{"Lun,Mar,Mer,Gio,Ven,Sab,Dom"|i18n('mcalendar/fullcalendar')}</p>
+        <p title="day_names">{"Domenica,Lunedì,Martedì,Mercoledì,Giovedì,Venerdì,Sabato"|i18n('mcalendar/fullcalendar')}</p>
+        <p title="day_names_short">{"Dom,Lun,Mar,Mer,Gio,Ven,Sab"|i18n('mcalendar/fullcalendar')}</p>
     </div>
 </div>
 

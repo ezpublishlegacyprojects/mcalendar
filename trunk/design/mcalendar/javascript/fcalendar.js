@@ -32,9 +32,10 @@ switch(calendarType){
 }
     $calendar.fullCalendar({
         defaultView: defView,
+        firstDay:1,
         firstHour:7,
         minTime:7,
-        maxTime:18,
+        maxTime:20,
         timeslotsPerDay:30,
         allDayDefault:false,
         header: {
@@ -125,13 +126,10 @@ switch(calendarType){
         },
 
         eventRender:function(calEvent,$event) {
-            if (calEvent.end.getTime() < new Date().getTime()) {
-                $event.css("background-color", eventColor);
-                $event.find('a').css("background-color", eventColor);
-            }
+
+            $event.find('a').css("background-color", eventColor);
             $event.css("background-color", eventColor);
-            $event.append('<div class="info"> isMain '+calEvent.isMain+' Freq:'+calEvent.frequency+'</div>');
-            $event.append(renderToolbar(calEvent))  ;
+            if(canEdit)   $event.append(renderToolbar(calEvent))  ;
 
         }
 

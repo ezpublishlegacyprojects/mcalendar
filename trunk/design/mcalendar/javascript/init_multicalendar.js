@@ -11,6 +11,7 @@ $(document).ready(function() {
     var calendarsToFetch=createCalendarsFetchList(calendars_list_data);
     $calendar.fullCalendar({
         defaultView: 'month',
+        firstDay:1,
         firstHour:7,
         minTime:7,
         maxTime:20,
@@ -87,13 +88,12 @@ $(document).ready(function() {
             }).show();
         },
         eventRender:function(calEvent,$event) {
-            if (calEvent.end.getTime() < new Date().getTime()) {
-                $event.css("background-color", eventColors[calEvent.parentNodeId]);
-                $event.find('a').css("background-color", eventColors[calEvent.parentNodeId]);
-            }
+           
+                
+            $event.find('a').css("background-color", eventColors[calEvent.parentNodeId]);
             $event.css("background-color", eventColors[calEvent.parentNodeId]);
-            $event.append('<div class="info"> isMain '+calEvent.isMain+' Freq:'+calEvent.frequency+'</div>');
-            $event.append(renderToolbar(calEvent));
+            
+            if (canEdit) $event.append(renderToolbar(calEvent));
           }
     });
     function createCalendarsFetchList( calendars) {
