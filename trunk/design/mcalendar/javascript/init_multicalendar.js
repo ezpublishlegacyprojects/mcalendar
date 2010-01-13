@@ -1,5 +1,5 @@
 $(document).ready(function() {
-
+    $("#event_edit_container").hide();
     var calendars_list=$('#config p[title="calendars_list"]').text();
     var calendars_list_data=eval('('+calendars_list+')');
     var actionUrl =$('p[title="action"]').text();

@@ -1,5 +1,5 @@
 $(document).ready(function() {
-
+   $("#event_edit_container").hide();
     var calendars_list=$('#tools_container p[title="calendars_list"]').text();
     var calendars_list_data=eval('('+calendars_list+')');
     var defView,buttons;
@@ -33,7 +33,8 @@ switch(calendarType){
     $calendar.fullCalendar({
         defaultView: defView,
         firstHour:7,
-        firstDay:0,
+        minTime:7,
+        maxTime:18,
         timeslotsPerDay:30,
         allDayDefault:false,
         header: {
@@ -56,7 +57,8 @@ switch(calendarType){
             week: 'Settimana',
             day: 'Giorno'
         },
-        events: function(start, end, callback) {
+        weekMode:'variable',
+         events: function(start, end, callback) {
            var action= 'mcalendar::fetchEvents::'+nodeId+'::'+Math.round(start.getTime()/1000)+'::'+Math.round(end.getTime()/1000)+'::ajaxweek';
             $.ez(action,{postdata:'ready'},function(data) {
                 callback(data.content);

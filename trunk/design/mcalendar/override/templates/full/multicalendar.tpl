@@ -1,7 +1,7 @@
 {* Multicalendar - Full view *}
-{scuolapagedata_set( 'left_menu', true() )}
-{scuolapagedata_set( 'left_nav_menu', true() )}
-{scuolapagedata_set( 'extra_menu', false() )}
+{mpagedata_set( 'left_menu', true() )}
+{mpagedata_set( 'left_nav_menu', true() )}
+{mpagedata_set( 'extra_menu', false() )}
 {def $related_node=''}
 
 {run-once}
