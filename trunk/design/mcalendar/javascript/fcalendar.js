@@ -33,6 +33,7 @@ switch(calendarType){
     $calendar.fullCalendar({
         defaultView: defView,
         firstHour:7,
+        firstDay:0,
         timeslotsPerDay:30,
         allDayDefault:false,
         header: {
